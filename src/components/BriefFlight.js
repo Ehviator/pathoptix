@@ -368,15 +368,15 @@ export default function BriefFlight() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Planned Block Fuel:</span>
-                  <strong style={{ color: '#fff' }}>{(mission.blockFuel || 0).toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{(mission.blockFuel || 0).toLocaleString()} lbs</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Taxi Fuel Out:</span>
-                  <strong style={{ color: '#fff' }}>{(mission.taxiFuel || 0).toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{(mission.taxiFuel || 0).toLocaleString()} lbs</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Planned Trip Burn:</span>
-                  <strong style={{ color: '#fff' }}>{tripFuelCalc.toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{tripFuelCalc.toLocaleString()} lbs</strong>
                 </div>
               </div>
             </div>
@@ -385,15 +385,15 @@ export default function BriefFlight() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Contingency (5%):</span>
-                  <strong style={{ color: '#fff' }}>{contingencyFuelCalc.toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{contingencyFuelCalc.toLocaleString()} lbs</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Alternate Fuel:</span>
-                  <strong style={{ color: '#fff' }}>{(mission.alternateFuel || 0).toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{(mission.alternateFuel || 0).toLocaleString()} lbs</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Final Reserve (Holding):</span>
-                  <strong style={{ color: '#fff' }}>{(mission.finalReserveFuel || 0).toLocaleString()} lbs</strong>
+                  <strong style={{ color: '#fff' }} className="num-val">{(mission.finalReserveFuel || 0).toLocaleString()} lbs</strong>
                 </div>
               </div>
             </div>
@@ -402,17 +402,17 @@ export default function BriefFlight() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Minimum Diversion Fuel (MDF):</span>
-                  <strong style={{ color: 'var(--accent-warn)' }}>{minimumDiversionFuel.toLocaleString()} lbs</strong>
+                  <strong style={{ color: 'var(--accent-warn)' }} className="num-val">{minimumDiversionFuel.toLocaleString()} lbs</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Projected Landing Fuel:</span>
-                  <strong style={{ color: isLandingFuelWarning ? 'var(--accent-warn)' : '#00f0ff' }}>
+                  <strong style={{ color: isLandingFuelWarning ? 'var(--accent-warn)' : 'var(--accent-cyan)' }} className="num-val">
                     {projectedLandingFuel.toLocaleString()} lbs
                   </strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Legality Margin:</span>
-                  <strong style={{ color: legalLandingMargin >= 0 ? '#00ff88' : 'var(--accent-crit)', fontWeight: 'bold' }}>
+                  <strong style={{ color: legalLandingMargin >= 0 ? 'var(--accent-green)' : 'var(--accent-crit)', fontWeight: 'bold' }} className="num-val">
                     {legalLandingMargin >= 0 ? `+${legalLandingMargin.toLocaleString()} lbs (LEGAL)` : `${legalLandingMargin.toLocaleString()} lbs (UNDER-RESERVE)`}
                   </strong>
                 </div>
@@ -440,13 +440,13 @@ export default function BriefFlight() {
                 <thead>
                   <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '11px', textTransform: 'uppercase' }}>
                     <th style={{ padding: '8px', textAlign: 'left' }}>Fix</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>Trk (°)</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>Dist (NM)</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>Wind (kt)</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>FL</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>SAT (°C)</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>TAS/GS (kt)</th>
-                    <th style={{ padding: '8px', textAlign: 'center' }}>Leg ETE</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Trk (°)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Dist (NM)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Wind (kt)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>FL</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>SAT (°C)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>TAS/GS (kt)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Leg ETE</th>
                     <th style={{ padding: '8px', textAlign: 'right' }}>Plan Fuel</th>
                   </tr>
                 </thead>
@@ -458,14 +458,14 @@ export default function BriefFlight() {
                     return (
                       <tr key={`brief-log-${row.ident}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
                         <td style={{ padding: '8px', textAlign: 'left', fontWeight: 'bold' }}>{row.ident}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{row.trackAngle !== null && row.trackAngle !== undefined ? `${row.trackAngle.toString().padStart(3, '0')}°` : '--'}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{row.legDistance === 0 ? '--' : row.legDistance}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{row.wind} kt</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>FL{row.fl}</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{row.sat}°C</td>
-                        <td style={{ padding: '8px', textAlign: 'center' }}>{row.tas} / {row.gs}</td>
-                        <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'monospace' }}>{timeFormatted}</td>
-                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{row.plannedFuel.toLocaleString()} lbs</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{row.trackAngle !== null && row.trackAngle !== undefined ? `${row.trackAngle.toString().padStart(3, '0')}°` : '--'}</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{row.legDistance === 0 ? '--' : row.legDistance}</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{row.wind} kt</td>
+                        <td className="num-val" style={{ padding: '8px' }}>FL{row.fl}</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{row.sat}°C</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{row.tas} / {row.gs}</td>
+                        <td className="num-val" style={{ padding: '8px' }}>{timeFormatted}</td>
+                        <td className="num-val" style={{ padding: '8px', color: 'var(--accent-cyan)' }}>{row.plannedFuel.toLocaleString()} lbs</td>
                       </tr>
                     );
                   })}
@@ -515,11 +515,11 @@ export default function BriefFlight() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
             <div>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Climb TOC Distance</span>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#00ff88' }}>{climbDistance} NM</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>{climbDistance} NM</div>
             </div>
             <div>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Descent TOD Distance</span>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff4d4d' }}>{descentDistance} NM from Dest</div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-crit)' }}>{descentDistance} NM from Dest</div>
             </div>
             <div>
               <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Cruising Flight Level</span>
@@ -576,7 +576,7 @@ export default function BriefFlight() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {/* Terrain threats check */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: terrainResult.count > 0 ? 'rgba(255, 77, 77, 0.08)' : 'rgba(0, 168, 150, 0.08)', border: terrainResult.count > 0 ? '1px solid rgba(255, 77, 77, 0.2)' : '1px solid rgba(0, 168, 150, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: terrainResult.count > 0 ? 'rgba(255, 0, 0, 0.08)' : 'rgba(0, 255, 0, 0.08)', border: terrainResult.count > 0 ? '1px solid rgba(255, 0, 0, 0.2)' : '1px solid rgba(0, 255, 0, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
               <span style={{ fontSize: '16px' }}>🏔️</span>
               <div style={{ fontSize: '13px', flex: 1 }}>
                 <strong>Terrain Clearance threats: </strong>
@@ -585,7 +585,7 @@ export default function BriefFlight() {
                     WARNING: {terrainResult.count} peak locations violate the 2,000 ft clearance margin relative to the OEI single-engine ceiling. Max peak: {terrainResult.maxPeak.toLocaleString()} ft.
                   </span>
                 ) : (
-                  <span style={{ color: '#00ff88' }}>
+                  <span style={{ color: 'var(--accent-green)' }}>
                     CLEAR. Single-engine ceiling (FL{Math.round(ceilingAlt / 100)}) maintains a safe margin (&gt;2,000 ft) over all peaks. Max peak: {terrainResult.maxPeak.toLocaleString()} ft.
                   </span>
                 )}
@@ -593,7 +593,7 @@ export default function BriefFlight() {
             </div>
 
             {/* Winter Ops check */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: isIcingRisk ? 'rgba(255, 77, 77, 0.08)' : 'rgba(0, 168, 150, 0.08)', border: isIcingRisk ? '1px solid rgba(255, 77, 77, 0.2)' : '1px solid rgba(0, 168, 150, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: isIcingRisk ? 'rgba(255, 191, 0, 0.08)' : 'rgba(0, 255, 0, 0.08)', border: isIcingRisk ? '1px solid rgba(255, 191, 0, 0.2)' : '1px solid rgba(0, 255, 0, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
               <span style={{ fontSize: '16px' }}>❄️</span>
               <div style={{ fontSize: '13px', flex: 1 }}>
                 <strong>Winter Operations & Icing Risks: </strong>
@@ -602,7 +602,7 @@ export default function BriefFlight() {
                     WARNING: Ground temperature is at or below 5°C. Ground/climb anti-ice system configurations required.
                   </span>
                 ) : (
-                  <span style={{ color: '#00ff88' }}>
+                  <span style={{ color: 'var(--accent-green)' }}>
                     NORMAL. All terminal temperatures are above icing risk limits.
                   </span>
                 )}
@@ -610,7 +610,7 @@ export default function BriefFlight() {
             </div>
 
             {/* Fuel Reserve check */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: isLandingFuelWarning ? 'rgba(255, 77, 77, 0.08)' : 'rgba(0, 168, 150, 0.08)', border: isLandingFuelWarning ? '1px solid rgba(255, 77, 77, 0.2)' : '1px solid rgba(0, 168, 150, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: isLandingFuelWarning ? 'rgba(255, 0, 0, 0.08)' : 'rgba(0, 255, 0, 0.08)', border: isLandingFuelWarning ? '1px solid rgba(255, 0, 0, 0.2)' : '1px solid rgba(0, 255, 0, 0.2)', padding: '10px 14px', borderRadius: '6px' }}>
               <span style={{ fontSize: '16px' }}>⛽</span>
               <div style={{ fontSize: '13px', flex: 1 }}>
                 <strong>Fuel reserve safety: </strong>
@@ -619,7 +619,7 @@ export default function BriefFlight() {
                     CRITICAL: Destination remaining fuel ({projectedLandingFuel.toLocaleString()} lbs) is below the minimum diversion fuel ({minimumDiversionFuel.toLocaleString()} lbs).
                   </span>
                 ) : (
-                  <span style={{ color: '#00ff88' }}>
+                  <span style={{ color: 'var(--accent-green)' }}>
                     SAFE. Destination remaining fuel maintains legal reserve requirements.
                   </span>
                 )}

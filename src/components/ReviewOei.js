@@ -179,23 +179,23 @@ export default function ReviewOei() {
     if (height >= 5000) {
       return { 
         label: 'Alpine / Mountainous', 
-        color: '#ff4a4a', 
-        bg: 'rgba(255, 74, 74, 0.1)', 
+        color: 'var(--accent-crit)', 
+        bg: 'rgba(255, 0, 0, 0.1)', 
         requiredBuffer: 2000 
       };
     }
     if (height >= 1500) {
       return { 
         label: 'Foothills / Moderate', 
-        color: '#ffa800', 
-        bg: 'rgba(255, 168, 0, 0.1)', 
+        color: 'var(--accent-warn)', 
+        bg: 'rgba(255, 191, 0, 0.1)', 
         requiredBuffer: 1000 
       };
     }
     return { 
       label: 'Prairie / Lowland', 
-      color: '#00a896', 
-      bg: 'rgba(0, 168, 150, 0.1)', 
+      color: 'var(--accent-green)', 
+      bg: 'rgba(0, 255, 0, 0.1)', 
       requiredBuffer: 1000 
     };
   };
@@ -554,82 +554,82 @@ export default function ReviewOei() {
                       stroke="var(--accent-cyan)" 
                       strokeWidth="1.5"
                       className="profile-waypoint-dot"
-                    />
-                    <text 
-                      x={x} 
-                      y="160" 
-                      textAnchor="middle" 
-                      fill="rgba(255,255,255,0.85)" 
-                      fontSize="9px" 
-                      fontFamily="monospace"
-                      transform={`rotate(-20, ${x}, 160)`}
-                    >
-                      {wp.ident}
-                    </text>
-                    <text 
-                      x={x} 
-                      y={y - 8} 
-                      textAnchor="middle" 
-                      fill="rgba(255,255,255,0.5)" 
-                      fontSize="8px"
-                      fontFamily="monospace"
-                    >
-                      {wp.altitude >= 18000 ? `FL${wp.altitude / 100}` : `${wp.altitude}ft`}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-
-          {/* OEI Controls */}
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.8)' }}>Engine Failure Analyzer:</span>
-              <select 
-                value={failWaypointIndex} 
-                onChange={(e) => {
-                  const idx = parseInt(e.target.value, 10);
-                  setFailWaypointIndex(idx);
-                  setIsSimulatingOEI(idx >= 0);
-                }}
-                style={{
-                  background: 'rgba(0,0,0,0.25)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="-1">-- SELECT FIX OF FAILURE --</option>
-                {navLog.map((wp, idx) => (
-                  <option key={`opt-fail-${wp.ident}`} value={idx}>{wp.ident} ({wp.type})</option>
-                ))}
-              </select>
-              {isSimulatingOEI && (
-                <button
-                  onClick={() => {
-                    setIsSimulatingOEI(false);
-                    setFailWaypointIndex(-1);
-                  }}
-                  style={{
-                    background: 'rgba(255,74,74,0.15)',
-                    border: '1px solid var(--accent-crit)',
-                    color: 'var(--accent-crit)',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                />
+                <text 
+                  x={x} 
+                  y="160" 
+                  textAnchor="middle" 
+                  fill="rgba(255,255,255,0.85)" 
+                  fontSize="9px" 
+                  fontFamily="monospace"
+                  transform={`rotate(-20, ${x}, 160)`}
                 >
-                  Reset
-                </button>
-              )}
-            </div>
+                  {wp.ident}
+                </text>
+                <text 
+                  x={x} 
+                  y={y - 8} 
+                  textAnchor="middle" 
+                  fill="rgba(255,255,255,0.5)" 
+                  fontSize="8px"
+                  fontFamily="monospace"
+                >
+                  {wp.altitude >= 18000 ? `FL${wp.altitude / 100}` : `${wp.altitude}ft`}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* OEI Controls */}
+      <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.8)' }}>Engine Failure Analyzer:</span>
+          <select 
+            value={failWaypointIndex} 
+            onChange={(e) => {
+              const idx = parseInt(e.target.value, 10);
+              setFailWaypointIndex(idx);
+              setIsSimulatingOEI(idx >= 0);
+            }}
+            style={{
+              background: 'rgba(0,0,0,0.25)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              color: '#fff',
+              padding: '6px 12px',
+              fontSize: '13px',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="-1">-- SELECT FIX OF FAILURE --</option>
+            {navLog.map((wp, idx) => (
+              <option key={`opt-fail-${wp.ident}`} value={idx}>{wp.ident} ({wp.type})</option>
+            ))}
+          </select>
+          {isSimulatingOEI && (
+            <button
+              onClick={() => {
+                setIsSimulatingOEI(false);
+                setFailWaypointIndex(-1);
+              }}
+              style={{
+                background: 'rgba(255,0,0,0.15)',
+                border: '1px solid var(--accent-crit)',
+                color: 'var(--accent-crit)',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
 
             {isSimulatingOEI && suggestedAlternate && (
               <div style={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', padding: '14px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -667,11 +667,11 @@ export default function ReviewOei() {
               </h3>
               
               {/* Failure point card */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', padding: '14px', background: 'rgba(255, 74, 74, 0.04)', border: '1px solid rgba(255, 74, 74, 0.1)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', padding: '14px', background: 'rgba(255, 0, 0, 0.04)', border: '1px solid rgba(255, 0, 0, 0.1)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
                 <div>Failure Point: <strong style={{ color: '#fff' }}>{navLogWithAltitudes[failWaypointIndex].ident}</strong></div>
                 <div>Position: <strong style={{ color: '#fff' }}>{navLogWithAltitudes[failWaypointIndex].lat.toFixed(4)}°N, {navLogWithAltitudes[failWaypointIndex].lon.toFixed(4)}°W</strong></div>
-                <div>Distance from Dep: <strong style={{ color: '#fff' }}>{failDist} NM</strong></div>
-                <div>Planned Fuel remaining: <strong style={{ color: 'var(--accent-cyan)' }}>{(navLogWithAltitudes[failWaypointIndex].plannedFuel || 0).toLocaleString()} lbs</strong></div>
+                <div>Distance from Dep: <strong style={{ color: '#fff' }} className="num-val">{failDist} NM</strong></div>
+                <div>Planned Fuel remaining: <strong style={{ color: 'var(--accent-cyan)' }} className="num-val">{(navLogWithAltitudes[failWaypointIndex].plannedFuel || 0).toLocaleString()} lbs</strong></div>
               </div>
 
               {/* Suitability alternatess list */}
@@ -680,12 +680,12 @@ export default function ReviewOei() {
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
                       <th style={{ padding: '10px 8px' }}>Escape Airport</th>
-                      <th style={{ padding: '10px 8px' }}>Distance</th>
-                      <th style={{ padding: '10px 8px' }}>Heading/Track</th>
-                      <th style={{ padding: '10px 8px' }}>Diversion Time</th>
-                      <th style={{ padding: '10px 8px' }}>Fuel Burn</th>
-                      <th style={{ padding: '10px 8px' }}>Projected Landing Fuel</th>
-                      <th style={{ padding: '10px 8px' }}>Legality Status</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Distance</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Heading/Track</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Diversion Time</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Fuel Burn</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Projected Landing Fuel</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Legality Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -695,29 +695,29 @@ export default function ReviewOei() {
                           <span style={{ fontWeight: 'bold', color: '#fff' }}>{route.icao}</span>
                           <span style={{ fontSize: '11px', display: 'block', color: 'rgba(255,255,255,0.5)' }}>{route.name}</span>
                         </td>
-                        <td style={{ padding: '12px 8px', fontWeight: '600', color: idx === 0 ? 'var(--accent-green)' : '#fff' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: '600', color: idx === 0 ? 'var(--accent-green)' : '#fff' }} className="num-val">
                           {route.distance} NM {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--accent-green)', marginLeft: '4px' }}>(CLOSEST)</span>}
                         </td>
-                        <td style={{ padding: '12px 8px', fontFamily: 'monospace' }}>
+                        <td style={{ padding: '12px 8px' }} className="num-val">
                           {route.bearing.toString().padStart(3, '0')}°
                         </td>
-                        <td style={{ padding: '12px 8px' }}>
+                        <td style={{ padding: '12px 8px' }} className="num-val">
                           {route.timeMin} mins
                         </td>
-                        <td style={{ padding: '12px 8px' }}>
+                        <td style={{ padding: '12px 8px' }} className="num-val">
                           {route.fuelBurn.toLocaleString()} lbs
                         </td>
-                        <td style={{ padding: '12px 8px', fontWeight: '600', color: route.isLegal ? 'var(--accent-cyan)' : 'var(--accent-crit)' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: '600', color: route.isLegal ? 'var(--accent-cyan)' : 'var(--accent-crit)' }} className="num-val">
                           {route.landingFuel.toLocaleString()} lbs
                         </td>
-                        <td style={{ padding: '12px 8px' }}>
+                        <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                           <span style={{
                             display: 'inline-block',
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '10px',
                             fontWeight: 'bold',
-                            backgroundColor: route.isLegal ? 'rgba(0, 168, 150, 0.15)' : 'rgba(255, 74, 74, 0.15)',
+                            backgroundColor: route.isLegal ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 0, 0, 0.15)',
                             color: route.isLegal ? 'var(--accent-green)' : 'var(--accent-crit)'
                           }}>
                             {route.isLegal ? '✓ LEGAL DIVERSION' : '⚠️ LOW RESERVES'}
@@ -749,22 +749,22 @@ export default function ReviewOei() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
-                      <th style={{ padding: '10px 8px' }}>Relative Dist</th>
-                      <th style={{ padding: '10px 8px' }}>Route Dist</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Relative Dist</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Route Dist</th>
                       <th style={{ padding: '10px 8px' }}>Flight Phase</th>
-                      <th style={{ padding: '10px 8px' }}>OEI Altitude</th>
-                      <th style={{ padding: '10px 8px' }}>Terrain Height</th>
-                      <th style={{ padding: '10px 8px' }}>Clearance Margin</th>
-                      <th style={{ padding: '10px 8px' }}>Safety Status</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>OEI Altitude</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Terrain Height</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Clearance Margin</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right' }}>Safety Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {driftdownProfileSteps.map((step, idx) => (
-                      <tr key={`dd-step-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: step.phase === 'Level-Off Point' ? 'rgba(0,240,255,0.02)' : 'transparent' }}>
-                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#fff' }}>
+                      <tr key={`dd-step-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: step.phase === 'Level-Off Point' ? 'rgba(0,255,255,0.02)' : 'transparent' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#fff' }} className="num-val">
                           +{step.distFromFail.toFixed(1)} NM
                         </td>
-                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }}>
+                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.7)' }} className="num-val">
                           {step.distance.toFixed(1)} NM
                         </td>
                         <td style={{ padding: '10px 8px' }}>
@@ -775,23 +775,23 @@ export default function ReviewOei() {
                             {step.phase}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#fff' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#fff' }} className="num-val">
                           {step.altitude.toLocaleString()} ft
                         </td>
-                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.85)' }}>
+                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.85)' }} className="num-val">
                           {step.terrainHeight.toLocaleString()} ft
                         </td>
-                        <td style={{ padding: '10px 8px', fontWeight: '600', color: step.isCompliant ? 'var(--accent-green)' : 'var(--accent-crit)' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: '600', color: step.isCompliant ? 'var(--accent-green)' : 'var(--accent-crit)' }} className="num-val">
                           {step.clearance.toLocaleString()} ft
                         </td>
-                        <td style={{ padding: '10px 8px' }}>
+                        <td style={{ padding: '10px 8px', textAlign: 'right' }}>
                           <span style={{
                             display: 'inline-block',
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '9px',
                             fontWeight: 'bold',
-                            backgroundColor: step.isCompliant ? 'rgba(0, 168, 150, 0.15)' : 'rgba(255, 74, 74, 0.15)',
+                            backgroundColor: step.isCompliant ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 0, 0, 0.15)',
                             color: step.isCompliant ? 'var(--accent-green)' : 'var(--accent-crit)'
                           }}>
                             {step.isCompliant ? 'COMPLIANT' : 'VIOLATION'}
@@ -852,7 +852,7 @@ export default function ReviewOei() {
             <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>✈️</span> Cruise Terrain Margin
             </h4>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', margin: '8px 0', color: cruiseClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', margin: '8px 0', color: cruiseClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }} className="num-val">
               {cruiseClearance.toLocaleString()} ft
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -865,7 +865,7 @@ export default function ReviewOei() {
                   borderRadius: '4px',
                   fontSize: '10px',
                   fontWeight: 'bold',
-                  backgroundColor: cruiseClearance >= peakClass.requiredBuffer ? 'rgba(0, 168, 150, 0.15)' : 'rgba(255, 74, 74, 0.15)',
+                  backgroundColor: cruiseClearance >= peakClass.requiredBuffer ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 0, 0, 0.15)',
                   color: cruiseClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)'
                 }}>
                   {cruiseClearance >= peakClass.requiredBuffer ? 'COMPLIANT' : 'VIOLATION'}
@@ -879,7 +879,7 @@ export default function ReviewOei() {
             <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>⚠️</span> OEI Clearance Margin
             </h4>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', margin: '8px 0', color: oeiCeilingClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', margin: '8px 0', color: oeiCeilingClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }} className="num-val">
               {oeiCeilingClearance.toLocaleString()} ft
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -892,7 +892,7 @@ export default function ReviewOei() {
                   borderRadius: '4px',
                   fontSize: '10px',
                   fontWeight: 'bold',
-                  backgroundColor: oeiCeilingClearance >= peakClass.requiredBuffer ? 'rgba(0, 168, 150, 0.15)' : 'rgba(255, 74, 74, 0.15)',
+                  backgroundColor: oeiCeilingClearance >= peakClass.requiredBuffer ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 0, 0, 0.15)',
                   color: oeiCeilingClearance >= peakClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)'
                 }}>
                   {oeiCeilingClearance >= peakClass.requiredBuffer ? 'CEILING COMPLIANT' : 'ESCAPE ROUTE REQ'}
@@ -916,11 +916,11 @@ export default function ReviewOei() {
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
                   <th style={{ padding: '10px 8px' }}>Route Segment</th>
-                  <th style={{ padding: '10px 8px' }}>Leg Distance</th>
-                  <th style={{ padding: '10px 8px' }}>Max Peak (MSL)</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Leg Distance</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Max Peak (MSL)</th>
                   <th style={{ padding: '10px 8px' }}>Terrain Classification</th>
-                  <th style={{ padding: '10px 8px' }}>Cruise Margin</th>
-                  <th style={{ padding: '10px 8px' }}>OEI Margin</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Cruise Margin</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>OEI Margin</th>
                 </tr>
               </thead>
               <tbody>
@@ -936,10 +936,10 @@ export default function ReviewOei() {
                       <td style={{ padding: '12px 8px', fontWeight: 'bold', color: '#fff' }}>
                         {zone.fromIdent} &rarr; {zone.toIdent}
                       </td>
-                      <td style={{ padding: '12px 8px', color: 'rgba(255,255,255,0.85)' }}>
+                      <td style={{ padding: '12px 8px', color: 'rgba(255,255,255,0.85)' }} className="num-val">
                         {zone.distance} NM
                       </td>
-                      <td style={{ padding: '12px 8px', color: 'rgba(255,255,255,0.85)' }}>
+                      <td style={{ padding: '12px 8px', color: 'rgba(255,255,255,0.85)' }} className="num-val">
                         {zone.maxElevation.toLocaleString()} ft
                       </td>
                       <td style={{ padding: '12px 8px' }}>
@@ -955,7 +955,7 @@ export default function ReviewOei() {
                           {zone.classification}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 8px' }}>
+                      <td style={{ padding: '12px 8px' }} className="num-val">
                         <span style={{
                           fontWeight: '600',
                           color: zone.isCruiseCompliant ? 'var(--accent-green)' : 'var(--accent-crit)'
@@ -970,7 +970,7 @@ export default function ReviewOei() {
                           (req: {zone.requiredBuffer.toLocaleString()} ft)
                         </span>
                       </td>
-                      <td style={{ padding: '12px 8px' }}>
+                      <td style={{ padding: '12px 8px' }} className="num-val">
                         <span style={{
                           fontWeight: '600',
                           color: zone.isOeiCompliant ? 'var(--accent-green)' : 'var(--accent-crit)'
@@ -984,7 +984,7 @@ export default function ReviewOei() {
                             borderRadius: '4px',
                             fontSize: '9px',
                             fontWeight: 'bold',
-                            backgroundColor: 'rgba(255, 74, 74, 0.15)',
+                            backgroundColor: 'rgba(255, 0, 0, 0.15)',
                             color: 'var(--accent-crit)'
                           }}>
                             ESCAPE REQ
@@ -1015,11 +1015,11 @@ export default function ReviewOei() {
                   <th style={{ padding: '10px 8px' }}>Waypoint</th>
                   <th style={{ padding: '10px 8px' }}>Type</th>
                   <th style={{ padding: '10px 8px' }}>Coordinates</th>
-                  <th style={{ padding: '10px 8px' }}>Cumulative Distance</th>
-                  <th style={{ padding: '10px 8px' }}>Profile Alt</th>
-                  <th style={{ padding: '10px 8px' }}>Terrain Height</th>
-                  <th style={{ padding: '10px 8px' }}>Normal Margin</th>
-                  <th style={{ padding: '10px 8px' }}>OEI Margin</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Cumulative Distance</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Profile Alt</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Terrain Height</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Normal Margin</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>OEI Margin</th>
                 </tr>
               </thead>
               <tbody>
@@ -1043,11 +1043,11 @@ export default function ReviewOei() {
                         <td style={{ padding: '10px 8px', fontFamily: 'monospace', fontSize: '11px', color: 'rgba(255,255,255,0.7)' }}>
                           {wp.lat.toFixed(4)}°, {wp.lon.toFixed(4)}°
                         </td>
-                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.85)' }}>{wp.cumulativeDistance} NM</td>
-                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>
+                        <td style={{ padding: '10px 8px', color: 'rgba(255,255,255,0.85)' }} className="num-val">{wp.cumulativeDistance} NM</td>
+                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: 'var(--accent-cyan)' }} className="num-val">
                           {wp.altitude.toLocaleString()} ft
                         </td>
-                        <td style={{ padding: '10px 8px', color: '#fff' }}>
+                        <td style={{ padding: '10px 8px', color: '#fff' }} className="num-val">
                           {wpHeight.toLocaleString()} ft
                           {wpHeight > 0 && (
                             <span style={{
@@ -1064,10 +1064,10 @@ export default function ReviewOei() {
                             </span>
                           )}
                         </td>
-                        <td style={{ padding: '10px 8px', fontWeight: '600', color: normalMargin >= wpClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: '600', color: normalMargin >= wpClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }} className="num-val">
                           {normalMargin.toLocaleString()} ft
                         </td>
-                        <td style={{ padding: '10px 8px', fontWeight: '600', color: oeiMargin >= wpClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: '600', color: oeiMargin >= wpClass.requiredBuffer ? 'var(--accent-green)' : 'var(--accent-crit)' }} className="num-val">
                           {oeiMargin.toLocaleString()} ft
                         </td>
                       </tr>

@@ -14,6 +14,7 @@ import 'leaflet/dist/leaflet.css';
 export default function App() {
   const [activeTab, setActiveTab] = useState('create-flight');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -88,84 +89,116 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="header-left-spacer"></div>
-
-        <div className="brand centered-load">
-          <div className="brand-logo"></div>
-          <div className="brand-text">
-            <h1>PathOptix</h1>
-            <span className="subtitle">E195-E2 Performance & Vertical Profile Optimizer</span>
+    <div className="efb-layout">
+      {/* Collapsible Left-Hand Sidebar */}
+      <aside className={`efb-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div>
+          <div className="sidebar-header">
+            <div className="sidebar-logo"></div>
+            {!sidebarCollapsed && <span className="sidebar-brand-text">PathOptix</span>}
           </div>
+
+          <nav className="sidebar-nav">
+            <button 
+              className={`sidebar-btn ${activeTab === 'create-flight' ? 'active' : ''}`}
+              onClick={() => setActiveTab('create-flight')}
+              title="Create Flight"
+            >
+              <span>📋</span> {!sidebarCollapsed && "Create Flight"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-route' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-route')}
+              title="Review Route"
+            >
+              <span>🗺️</span> {!sidebarCollapsed && "Review Route"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-fuel' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-fuel')}
+              title="Review Fuel"
+            >
+              <span>⛽</span> {!sidebarCollapsed && "Review Fuel"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-performance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-performance')}
+              title="Review Performance"
+            >
+              <span>⚡</span> {!sidebarCollapsed && "Review Performance"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-optimization' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-optimization')}
+              title="Optimize Fuel"
+            >
+              <span>📊</span> {!sidebarCollapsed && "Optimize Fuel"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-weather' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-weather')}
+              title="Review Weather"
+            >
+              <span>🌦️</span> {!sidebarCollapsed && "Review Weather"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-oei' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-oei')}
+              title="Review OEI"
+            >
+              <span>⚠️</span> {!sidebarCollapsed && "Review OEI"}
+            </button>
+            <button 
+              className={`sidebar-btn ${activeTab === 'brief-flight' ? 'active' : ''}`}
+              onClick={() => setActiveTab('brief-flight')}
+              title="Brief Flight"
+            >
+              <span>🏁</span> {!sidebarCollapsed && "Brief Flight"}
+            </button>
+          </nav>
         </div>
 
-        <div className={`system-status status-container-box ${isOnline ? 'net-online' : 'net-offline'}`}>
-          <span className={`status-indicator ${isOnline ? 'online-glow' : 'offline-glow'}`}></span>
-          <span className="status-text">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+        <div className="sidebar-footer">
+          <button 
+            className="sidebar-toggle-btn" 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {sidebarCollapsed ? "▶" : "◀"}
+          </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="app-content">
-        <nav className="nav-tabs body-nav-tier">
-          <button 
-            className={`nav-tab-btn ${activeTab === 'create-flight' ? 'active' : ''}`}
-            onClick={() => setActiveTab('create-flight')}
-          >
-            📋 Create Flight
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-route' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-route')}
-          >
-            🗺️ Review Route
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-fuel' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-fuel')}
-          >
-            ⛽ Review Fuel
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-performance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-performance')}
-          >
-            ⚡ Review Performance
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-optimization' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-optimization')}
-          >
-            📊 Optimize Fuel
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-weather' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-weather')}
-          >
-            🌦️ Review Weather
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'review-oei' ? 'active' : ''}`}
-            onClick={() => setActiveTab('review-oei')}
-          >
-            ⚠️ Review OEI
-          </button>
-          <button 
-            className={`nav-tab-btn ${activeTab === 'brief-flight' ? 'active' : ''}`}
-            onClick={() => setActiveTab('brief-flight')}
-          >
-            🏁 Brief Flight
-          </button>
-        </nav>
+      {/* Main EFB content canvas */}
+      <div className="efb-content-canvas">
+        <div className="app-container">
+          <header className="app-header">
+            <div className="header-left-spacer"></div>
 
-        <div className="workspace-view-wrapper">
-          {renderActiveComponent()}
+            <div className="brand centered-load">
+              <div className="brand-text">
+                <h1>PathOptix</h1>
+                <span className="subtitle">E195-E2 Performance & Vertical Profile Optimizer</span>
+              </div>
+            </div>
+
+            <div className={`system-status status-container-box ${isOnline ? 'net-online' : 'net-offline'}`}>
+              <span className={`status-indicator ${isOnline ? 'online-glow' : 'offline-glow'}`}></span>
+              <span className="status-text">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+            </div>
+          </header>
+
+          <main className="app-content">
+            <div className="workspace-view-wrapper">
+              {renderActiveComponent()}
+            </div>
+          </main>
+
+          <footer className="app-footer">
+            <p>Tactical EFB Flight Deck Tool • Embraer E195-E2 PW1900G • Version 1.3.0</p>
+          </footer>
         </div>
-      </main>
-
-      <footer className="app-footer">
-        <p>Tactical EFB Flight Deck Tool • Embraer E195-E2 PW1900G • Version 1.3.0</p>
-      </footer>
+      </div>
     </div>
   );
 }

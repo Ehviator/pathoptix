@@ -377,8 +377,8 @@ export default function CreateFlight() {
         {navLog && navLog.length > 0 && (
           <div className="glass-panel" style={{ 
             padding: '24px', 
-            border: '1px solid rgba(0, 168, 150, 0.4)', 
-            background: 'linear-gradient(135deg, rgba(12, 27, 42, 0.95), rgba(6, 15, 25, 0.95))',
+            border: '1px solid rgba(0, 255, 255, 0.2)', 
+            background: 'linear-gradient(135deg, rgba(10, 10, 12, 0.95), rgba(5, 5, 6, 0.95))',
             borderRadius: '12px',
             boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
           }}>
@@ -391,7 +391,7 @@ export default function CreateFlight() {
                   Real-time mission-critical routing, fuel burn projections, and terrain clearance analysis.
                 </p>
               </div>
-              <div style={{ background: 'rgba(0, 168, 150, 0.15)', border: '1px solid var(--accent-cyan)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: 'var(--accent-cyan)', fontWeight: 'bold', letterSpacing: '1px' }}>
+              <div style={{ background: 'rgba(0, 255, 255, 0.08)', border: '1px solid var(--accent-cyan)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: 'var(--accent-cyan)', fontWeight: 'bold', letterSpacing: '1px' }}>
                 {mission.flightNumber || 'POIXXX'} | {mission.registration || 'C-GKPL'}
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function CreateFlight() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Est Time:</span>
-                    <strong style={{ color: '#ffb700' }}>{formattedTime}</strong>
+                    <strong style={{ color: 'var(--accent-warn)' }}>{formattedTime}</strong>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '13px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '6px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Alternates:</span>
@@ -451,7 +451,7 @@ export default function CreateFlight() {
                     fontSize: '13px', 
                     borderTop: '1px solid rgba(255,255,255,0.03)', 
                     paddingTop: '6px',
-                    color: isLandingFuelWarning ? 'var(--accent-warn)' : '#00f0ff'
+                    color: isLandingFuelWarning ? 'var(--accent-warn)' : 'var(--accent-cyan)'
                   }}>
                     <span>Dest Remaining:</span>
                     <strong style={{ fontWeight: 'bold' }}>{projectedLandingFuel.toLocaleString()} lbs</strong>
@@ -498,7 +498,7 @@ export default function CreateFlight() {
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     fontSize: '13px',
-                    color: terrainResult.count > 0 ? 'var(--accent-warn)' : '#00a896'
+                    color: terrainResult.count > 0 ? 'var(--accent-warn)' : 'var(--accent-green)'
                   }}>
                     <span>Terrain Threats:</span>
                     <strong style={{ fontWeight: 'bold' }}>
@@ -537,16 +537,16 @@ export default function CreateFlight() {
                 padding: '10px 14px',
                 borderRadius: '8px',
                 background: relayStatus === 'receiving'
-                  ? 'rgba(0, 240, 255, 0.08)'
+                  ? 'rgba(0, 255, 255, 0.08)'
                   : relayStatus === 'connected'
-                    ? 'rgba(0, 168, 150, 0.06)'
-                    : 'rgba(255, 74, 74, 0.06)',
+                    ? 'rgba(0, 255, 0, 0.06)'
+                    : 'rgba(255, 0, 0, 0.06)',
                 border: '1px solid ' + (
                   relayStatus === 'receiving'
-                    ? 'rgba(0, 240, 255, 0.3)'
+                    ? 'rgba(0, 255, 255, 0.3)'
                     : relayStatus === 'connected'
-                      ? 'rgba(0, 168, 150, 0.2)'
-                      : 'rgba(255, 74, 74, 0.2)'
+                      ? 'rgba(0, 255, 0, 0.2)'
+                      : 'rgba(255, 0, 0, 0.2)'
                 ),
                 transition: 'var(--transition-smooth)'
               }}>
@@ -556,15 +556,15 @@ export default function CreateFlight() {
                   height: '10px',
                   borderRadius: '50%',
                   background: relayStatus === 'receiving'
-                    ? '#00f0ff'
+                    ? 'var(--accent-cyan)'
                     : relayStatus === 'connected'
-                      ? '#00a896'
-                      : '#ff4a4a',
+                      ? 'var(--accent-green)'
+                      : 'var(--accent-crit)',
                   boxShadow: relayStatus === 'connected'
-                    ? '0 0 6px rgba(0, 168, 150, 0.6)'
+                    ? '0 0 6px rgba(0, 255, 0, 0.6)'
                     : relayStatus === 'receiving'
-                      ? '0 0 10px rgba(0, 240, 255, 0.8)'
-                      : '0 0 6px rgba(255, 74, 74, 0.6)',
+                      ? '0 0 10px rgba(0, 255, 255, 0.8)'
+                      : '0 0 6px rgba(255, 0, 0, 0.6)',
                   animation: relayStatus === 'connected' || relayStatus === 'receiving'
                     ? 'pulse-dot 2s ease-in-out infinite'
                     : 'none',
@@ -617,21 +617,21 @@ export default function CreateFlight() {
 
           {/* Feedback Messages */}
           {pdfLoading && (
-            <div className="alert-banner info" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(0,240,255,0.08)', border: '1px solid rgba(0,240,255,0.25)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
+            <div className="alert-banner info" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(0,255,255,0.08)', border: '1px solid rgba(0,255,255,0.25)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
               <div className="loading-spinner" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid var(--accent-cyan)' }}></div>
               <span>Reading briefing PDF pages and extracting performance variables...</span>
             </div>
           )}
 
           {pdfError && (
-            <div className="alert-banner danger" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(255,74,74,0.08)', border: '1px solid rgba(255,74,74,0.25)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
+            <div className="alert-banner danger" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(255,0,0,0.08)', border: '1px solid rgba(255,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
               <span style={{ fontSize: '16px' }}>⚠️</span>
               <span>{pdfError}</span>
             </div>
           )}
 
           {pdfSuccess && (
-            <div className="alert-banner success" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(0,168,150,0.12)', border: '1px solid rgba(0,168,150,0.3)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
+            <div className="alert-banner success" style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(0,255,0,0.08)', border: '1px solid rgba(0,255,0,0.2)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#fff', marginBottom: '10px' }}>
               <span style={{ fontSize: '16px' }}>✓</span>
               <span>{pdfSuccess}</span>
             </div>
