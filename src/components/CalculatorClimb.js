@@ -1,40 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useMission } from '../context/MissionContext.js';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
 
 export default function CalculatorClimb() {
-  const [inputs, setInputs] = useState({
-    climbWeight: 115000, 
-    targetAltitude: 35000, 
-    isaDev: 0
-  });
+  const { mission, updateMissionField } = useMission();
 
-  const handleManualEntry = (key, value, min, max) => {
-    let parsed = parseInt(value, 10);
-    if (isNaN(parsed)) return;
-    if (parsed < min) parsed = min;
-    if (parsed > max) parsed = max;
-    setInputs(prev => ({ ...prev, [key]: parsed }));
-  };
-
-  const climbWeightKg = inputs.climbWeight / 2.20462;
+  const climbWeightKg = mission.weight / 2.20462;
   const baseClimbSpeedIAS = 290; 
-  const targetedIAS = modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, inputs.isaDev);
+  const targetedIAS = modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, mission.isaDev);
 
   const baseTimeToClimb = 12; 
-  const weightTimeFactor = (inputs.climbWeight - 90000) * 0.00012;
-  const tempTimeFactor = inputs.isaDev > 0 ? inputs.isaDev * 0.15 : 0;
-  const altTimeFactor = (inputs.targetAltitude - 25000) * 0.0003;
+  const weightTimeFactor = (mission.weight - 90000) * 0.00012;
+  const tempTimeFactor = mission.isaDev > 0 ? mission.isaDev * 0.15 : 0;
+  const altTimeFactor = (mission.targetAltitude - 25000) * 0.0003;
   const timeToClimb = Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + altTimeFactor);
 
-  const climbDistance = Math.round(55 + (climbWeightKg - 40000) * 0.00075 + (inputs.targetAltitude - 20000) * 0.0015 + inputs.isaDev * 0.25);
+  const climbDistance = Math.round(55 + (climbWeightKg - 40000) * 0.00075 + (mission.targetAltitude - 20000) * 0.0015 + mission.isaDev * 0.25);
 
   const baseClimbFuel = 1300; 
-  const weightFuelFactor = (inputs.climbWeight - 90000) * 0.015;
-  const tempFuelFactor = inputs.isaDev > 0 ? inputs.isaDev * 12 : 0;
-  const altFuelFactor = (inputs.targetAltitude - 25000) * 0.035;
+  const weightFuelFactor = (mission.weight - 90000) * 0.015;
+  const tempFuelFactor = mission.isaDev > 0 ? mission.isaDev * 12 : 0;
+  const altFuelFactor = (mission.targetAltitude - 25000) * 0.035;
   const fuelBurned = Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + altFuelFactor);
 
-  const averageROC = Math.round(inputs.targetAltitude / timeToClimb);
+  const averageROC = Math.round(mission.targetAltitude / timeToClimb);
 
   return (
     <div className="panel-container">
@@ -52,9 +41,9 @@ export default function CalculatorClimb() {
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                key={`weight-${inputs.climbWeight}`}
-                defaultValue={inputs.climbWeight}
-                onBlur={(e) => handleManualEntry('climbWeight', e.target.value, 85000, 135000)}
+                key={`weight-${mission.weight}`}
+                defaultValue={mission.weight}
+                onBlur={(e) => updateMissionField('weight', e.target.value, 85000, 135000)}
                 className="touch-input-field"
               />
             </div>
@@ -63,9 +52,9 @@ export default function CalculatorClimb() {
               <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
-                key={`alt-${inputs.targetAltitude}`}
-                defaultValue={inputs.targetAltitude}
-                onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 15000, 41000)}
+                key={`alt-${mission.targetAltitude}`}
+                defaultValue={mission.targetAltitude}
+                onBlur={(e) => updateMissionField('targetAltitude', e.target.value, 15000, 41000)}
                 className="touch-input-field"
               />
             </div>
@@ -74,9 +63,9 @@ export default function CalculatorClimb() {
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
-                key={`isa-${inputs.isaDev}`}
-                defaultValue={inputs.isaDev}
-                onBlur={(e) => handleManualEntry('isaDev', e.target.value, -20, 20)}
+                key={`isa-${mission.isaDev}`}
+                defaultValue={mission.isaDev}
+                onBlur={(e) => updateMissionField('isaDev', e.target.value, -20, 20)}
                 className="touch-input-field"
               />
             </div>
@@ -111,6 +100,12 @@ export default function CalculatorClimb() {
           </div>
         </div>
       </div>
+
+      {/* Compliance Reference Footer Block */}
+      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+        <span>DATA REFERENCE: EMBRAER E195-E2 AOM SECTION PI-CLB</span>
+        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
+      </footer>
     </div>
   );
 }

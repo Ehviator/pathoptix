@@ -1,22 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useMission } from '../context/MissionContext.js';
 import L from 'leaflet';
 
 // Resolve generic Leaflet marker asset resolution faults inside SPAs
 if (L && L.Icon && L.Icon.Default) {
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: '/images/marker-icon-2x.png',
-    iconUrl: '/images/marker-icon.png',
-    shadowUrl: '/images/marker-shadow.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   });
 }
 
 export default function FlightMap() {
-  const [routeInput, setRouteString] = useState("YTZ SEDAR YOW");
-  const [navDb, setNavDb] = useState(null);
+  const { mission, updateMissionField, navDb, loading } = useMission();
   const [activeCoords, setActiveCoords] = useState([]);
   const [navLog, setNavLog] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const [map, setMap] = useState(null);
   const mapContainerRef = useRef(null);
@@ -24,21 +23,7 @@ export default function FlightMap() {
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
 
-  // Synchronize aeronautical waypoint spatial database
-  useEffect(() => {
-    fetch('/data/nav_db.json')
-      .then(res => res.json())
-      .then(data => {
-        setNavDb(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Navigation database synchronization fault:", err);
-        setLoading(false);
-      });
-  }, []);
-
-  const parseFlightRoute = (currentInput = routeInput) => {
+  const parseFlightRoute = (currentInput = mission.routeString) => {
     if (!navDb || !navDb.waypoints) return;
     
     const elements = currentInput.toUpperCase().trim().split(/\s+/);
@@ -60,7 +45,7 @@ export default function FlightMap() {
           lat: fix.lat,
           lon: fix.lon,
           wind: existing ? existing.wind : 0,
-          fl: existing ? existing.fl : 350,
+          fl: existing ? existing.fl : mission.cruiseFL,
           sat: existing ? existing.sat : -45,
           plannedFuel: existing ? existing.plannedFuel : 5000,
           actualFuel: existing ? existing.actualFuel : 5000
@@ -74,7 +59,7 @@ export default function FlightMap() {
 
   useEffect(() => {
     if (navDb) parseFlightRoute();
-  }, [navDb]);
+  }, [navDb, mission.routeString]);
 
   // Leaflet Map Initialization Hook (waits until loading is done so mapContainerRef exists in DOM)
   useEffect(() => {
@@ -157,7 +142,7 @@ export default function FlightMap() {
   }, [map, activeCoords, navLog]);
 
   const updateLogField = (index, key, value) => {
-    let parsed = key === 'sat' || key === 'wind' ? parseInt(value, 10) : parseFloat(value);
+    let parsed = key === 'sat' || key === 'wind' || key === 'fl' ? parseInt(value, 10) : parseFloat(value);
     if (isNaN(parsed)) parsed = 0;
 
     // Wind constraints safety-clamping boundary verification
@@ -178,8 +163,8 @@ export default function FlightMap() {
   return (
     <div className="panel-container">
       <div className="panel-header">
-        <h2>Flight Map & Waypoint Navlog</h2>
-        <p>Input operational route configurations to compile performance metrics and track fuel profile deltas.</p>
+        <h2>Tactical Navigation Map & Route Advisor</h2>
+        <p>Parses operational string logs, plots coordinates, and compiles waypoint performance navlogs.</p>
       </div>
 
       <div className="panel-body grid-2col">
@@ -191,10 +176,10 @@ export default function FlightMap() {
               <label>String Route Sequence (Fix / VOR / NDB)</label>
               <input 
                 type="text" 
-                value={routeInput}
+                value={mission.routeString}
                 onChange={(e) => {
                   const val = e.target.value;
-                  setRouteString(val);
+                  updateMissionField('routeString', val);
                   parseFlightRoute(val);
                 }}
                 onKeyDown={(e) => {
@@ -304,6 +289,12 @@ export default function FlightMap() {
           </table>
         </div>
       )}
+
+      {/* Compliance Reference Footer Block */}
+      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+        <span>DATA REFERENCE: FCOM PART PI-ECON (EMB-195E2)</span>
+        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
+      </footer>
     </div>
   );
 }

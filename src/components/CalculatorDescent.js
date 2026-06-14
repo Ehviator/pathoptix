@@ -1,35 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useMission } from '../context/MissionContext.js';
 
 export default function CalculatorDescent() {
-  const [inputs, setInputs] = useState({
-    cruiseFL: 370,
-    targetAltitude: 3000,
-    descentSpeed: 270,
-    fpa: 3.0,
-    windFactor: 15,
-    antiIce: false
-  });
+  const { mission, updateMissionField, maxOperatingFL } = useMission();
 
-  const handleManualEntry = (key, value, min, max) => {
-    let parsed = key === 'fpa' ? parseFloat(value) : parseInt(value, 10);
-    if (isNaN(parsed)) return;
-
-    if (parsed < min) parsed = min;
-    if (parsed > max) parsed = max;
-
-    setInputs(prev => ({ ...prev, [key]: parsed }));
-  };
-
-  const altDiff = (inputs.cruiseFL * 100) - inputs.targetAltitude;
+  const altDiff = (mission.cruiseFL * 100) - mission.targetAltitude;
   
   // Standard aerodynamic base profile line
   const baseTOD = (altDiff / 1000) * 3;
-  const fpaFactor = 3.0 / inputs.fpa;
-  const speedFactor = 1.0 + (inputs.descentSpeed - 270) * 0.0025;
+  const fpaFactor = 3.0 / mission.fpa;
+  const speedFactor = 1.0 + (mission.descentSpeed - 270) * 0.0025;
   
   // High-wind correction with a logarithmic decay model
-  // Prevents unrealistic 600 NM TOD calculations in severe 200 kt tailwinds
-  const boundedWind = Math.max(-200, Math.min(200, inputs.windFactor));
+  const boundedWind = Math.max(-200, Math.min(200, mission.wind));
   const windSign = boundedWind >= 0 ? 1 : -1;
   const windCorrection = windSign * Math.log10(1 + Math.abs(boundedWind) * 0.15) * (altDiff / 1000) * 1.65;
   
@@ -40,10 +23,10 @@ export default function CalculatorDescent() {
   const timeMin = (todDistance / averageGS) * 60;
   const timeFormatted = `${Math.floor(timeMin)}:${Math.round((timeMin % 1) * 60).toString().padStart(2, '0')} min`;
 
-  const vsi = Math.round(-1 * averageGS * 101.268 * Math.tan((inputs.fpa * Math.PI) / 180));
+  const vsi = Math.round(-1 * averageGS * 101.268 * Math.tan((mission.fpa * Math.PI) / 180));
   const glideRatio = altDiff > 0 ? Math.round(((todDistance * 6076.1) / altDiff) * 10) / 10 : 0;
 
-  const baseFuelBurnRate = inputs.antiIce ? 3.4 : 3.0; 
+  const baseFuelBurnRate = mission.antiIce ? 3.4 : 3.0; 
   const fuelFlowLbs = Math.round(todDistance * baseFuelBurnRate + (boundedWind * 0.11));
   const cabinRate = Math.round(-320 + (vsi + 1800) * 0.08);
 
@@ -62,9 +45,9 @@ export default function CalculatorDescent() {
               <label>Cruise Level (FL)</label>
               <input 
                 type="number" 
-                key={`cruise-${inputs.cruiseFL}`}
-                defaultValue={inputs.cruiseFL}
-                onBlur={(e) => handleManualEntry('cruiseFL', e.target.value, 150, 410)}
+                key={`cruise-${mission.cruiseFL}`}
+                defaultValue={mission.cruiseFL}
+                onBlur={(e) => updateMissionField('cruiseFL', e.target.value, 150, maxOperatingFL)}
                 className="touch-input-field"
               />
             </div>
@@ -73,9 +56,9 @@ export default function CalculatorDescent() {
               <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
-                key={`target-${inputs.targetAltitude}`}
-                defaultValue={inputs.targetAltitude}
-                onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 0, 15000)}
+                key={`target-${mission.targetAltitude}`}
+                defaultValue={mission.targetAltitude}
+                onBlur={(e) => updateMissionField('targetAltitude', e.target.value, 0, 15000)}
                 className="touch-input-field"
               />
             </div>
@@ -84,9 +67,9 @@ export default function CalculatorDescent() {
               <label>Descent Speed (KIAS)</label>
               <input 
                 type="number" 
-                key={`speed-${inputs.descentSpeed}`}
-                defaultValue={inputs.descentSpeed}
-                onBlur={(e) => handleManualEntry('descentSpeed', e.target.value, 240, 310)}
+                key={`speed-${mission.descentSpeed}`}
+                defaultValue={mission.descentSpeed}
+                onBlur={(e) => updateMissionField('descentSpeed', e.target.value, 240, 310)}
                 className="touch-input-field"
               />
             </div>
@@ -96,9 +79,9 @@ export default function CalculatorDescent() {
               <input 
                 type="number" 
                 step="0.1"
-                key={`fpa-${inputs.fpa}`}
-                defaultValue={inputs.fpa}
-                onBlur={(e) => handleManualEntry('fpa', e.target.value, 2.0, 4.0)}
+                key={`fpa-${mission.fpa}`}
+                defaultValue={mission.fpa}
+                onBlur={(e) => updateMissionField('fpa', e.target.value, 2.0, 4.0)}
                 className="touch-input-field"
               />
             </div>
@@ -107,9 +90,9 @@ export default function CalculatorDescent() {
               <label>Average Wind Vector (kt)</label>
               <input 
                 type="number" 
-                key={`windFactor-${inputs.windFactor}`}
-                defaultValue={inputs.windFactor}
-                onBlur={(e) => handleManualEntry('windFactor', e.target.value, -200, 200)}
+                key={`wind-${mission.wind}`}
+                defaultValue={mission.wind}
+                onBlur={(e) => updateMissionField('wind', e.target.value, -200, 200)}
                 className="touch-input-field"
               />
             </div>
@@ -119,8 +102,8 @@ export default function CalculatorDescent() {
             <label className="toggle-container">
               <input 
                 type="checkbox" 
-                checked={inputs.antiIce} 
-                onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+                checked={mission.antiIce} 
+                onChange={(e) => updateMissionField('antiIce', e.target.checked)} 
               />
               <span className="toggle-label">Engine Anti-Ice Configuration ACTIVE</span>
             </label>
@@ -151,6 +134,12 @@ export default function CalculatorDescent() {
           </div>
         </div>
       </div>
+
+      {/* Compliance Reference Footer Block */}
+      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+        <span>DATA REFERENCE: EMBRAER E195-E2 AOM SECTION PI-DSC</span>
+        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
+      </footer>
     </div>
   );
 }

@@ -1,67 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useMission } from '../context/MissionContext.js';
 import { getCorrectedCostIndex } from '../engine/dynamicModulators.js';
-import { interpolate2D, getLegalMaxAltitude } from '../engine/interpolation.js';
+import { interpolate2D } from '../engine/interpolation.js';
 import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 
 export default function CalculatorCruise() {
-  const [inputs, setInputs] = useState({
-    speedMode: 'ECON',
-    weight: 115000, 
-    flightLevel: 350,
-    isaDev: 0,
-    costIndex: 15,
-    manualMach: 0.78,
-    wind: 120, 
-    antiIce: false
-  });
+  const { mission, updateMissionField, cruiseMatrix, maxOperatingFL, loading } = useMission();
 
-  const [cruiseData, setCruiseData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/data/cruise_econ.json')
-      .then(res => res.json())
-      .then(data => {
-        setCruiseData(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Performance matrix sync fault:", err);
-        setLoading(false);
-      });
-  }, []);
-
-  // Safe decimal and bounds verification loop
-  const handleManualEntry = (key, value, min, max) => {
-    let parsed = key === 'manualMach' ? parseFloat(value) : parseInt(value, 10);
-    if (isNaN(parsed)) return;
-    
-    if (parsed < min) parsed = min;
-    if (parsed > max) parsed = max;
-
-    setInputs(prev => ({ ...prev, [key]: parsed }));
-  };
-
-  const maxOperatingFL = getLegalMaxAltitude(inputs.weight);
+  const boundedWind = Math.max(-200, Math.min(200, mission.wind));
+  const correctedCI = getCorrectedCostIndex(mission.costIndex, boundedWind);
+  const weightLbs = mission.weight;
+  const weightKg = mission.weight / 2.20462;
   
-  useEffect(() => {
-    if (inputs.flightLevel > maxOperatingFL) {
-      setInputs(prev => ({ ...prev, flightLevel: maxOperatingFL }));
-    }
-  }, [inputs.weight, maxOperatingFL]);
-
-  const boundedWind = Math.max(-200, Math.min(200, inputs.wind));
-  const correctedCI = getCorrectedCostIndex(inputs.costIndex, boundedWind);
-  const weightLbs = inputs.weight;
-  const weightKg = inputs.weight / 2.20462;
-  
-  let resolvedMach = inputs.manualMach; 
+  let resolvedMach = mission.manualMach; 
   let isOutOfEnvelope = false;
-  const targetAltKey = (inputs.flightLevel * 100).toString();
+  const targetAltKey = (mission.cruiseFL * 100).toString();
 
-  if (inputs.speedMode === 'ECON') {
-    if (cruiseData && cruiseData.cruise_mach_matrix) {
-      const matrix = cruiseData.cruise_mach_matrix[targetAltKey] || cruiseData.cruise_mach_matrix["33000"];
+  if (mission.speedMode === 'ECON') {
+    if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
+      const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
       const interpResult = interpolate2D(
         weightLbs,
         correctedCI,
@@ -77,28 +34,28 @@ export default function CalculatorCruise() {
       }
     }
   } else {
-    if (inputs.flightLevel > 370 && resolvedMach > 0.80) {
+    if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
       isOutOfEnvelope = true;
     }
   }
 
-  const isaTemp = getISATemperature(inputs.flightLevel * 100);
-  const actualTemp = isaTemp + inputs.isaDev;
+  const isaTemp = getISATemperature(mission.cruiseFL * 100);
+  const actualTemp = isaTemp + mission.isaDev;
   const tas = Math.round(getTASFromMach(resolvedMach, actualTemp));
   const gs = Math.round(tas + boundedWind);
 
   const baseFFKg = 1550; 
   const machFactor = (resolvedMach - 0.70) * 4200;
   const weightFactor = (weightKg - 40000) * 0.028;
-  const altFactor = (inputs.flightLevel - 330) * -14;
-  const antiIceFactor = inputs.antiIce ? 180 : 0;
+  const altFactor = (mission.cruiseFL - 330) * -14;
+  const antiIceFactor = mission.antiIce ? 180 : 0;
   
   const fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
   const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
   const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
-  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (inputs.weight - 85000) * 0.00018) / 10) * 10);
+  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
 
-  if (loading) return <div className="panel-container"><p>Synchronizing Performance Matrix...</p></div>;
+  if (loading) return <div className="panel-container"><p>Synchronizing Cruise Performance Database...</p></div>;
 
   return (
     <div className="panel-container">
@@ -107,15 +64,15 @@ export default function CalculatorCruise() {
         <div className="mode-toggle-bar">
           <button 
             type="button" 
-            className={`btn-toggle ${inputs.speedMode === 'ECON' ? 'active' : ''}`}
-            onClick={() => setInputs(prev => ({ ...prev, speedMode: 'ECON' }))}
+            className={`btn-toggle ${mission.speedMode === 'ECON' ? 'active' : ''}`}
+            onClick={() => updateMissionField('speedMode', 'ECON')}
           >
             FMC ECON MODE (CI)
           </button>
           <button 
             type="button" 
-            className={`btn-toggle ${inputs.speedMode === 'MANUAL' ? 'active' : ''}`}
-            onClick={() => setInputs(prev => ({ ...prev, speedMode: 'MANUAL' }))}
+            className={`btn-toggle ${mission.speedMode === 'MANUAL' ? 'active' : ''}`}
+            onClick={() => updateMissionField('speedMode', 'MANUAL')}
           >
             MANUAL MACH TARGET
           </button>
@@ -131,9 +88,9 @@ export default function CalculatorCruise() {
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                key={`weight-${inputs.weight}`}
-                defaultValue={inputs.weight}
-                onBlur={(e) => handleManualEntry('weight', e.target.value, 85000, 130000)}
+                key={`weight-${mission.weight}`}
+                defaultValue={mission.weight}
+                onBlur={(e) => updateMissionField('weight', e.target.value, 85000, 130000)}
                 className="touch-input-field"
               />
             </div>
@@ -142,22 +99,22 @@ export default function CalculatorCruise() {
               <label>Flight Level (FL)</label>
               <input 
                 type="number" 
-                key={`fl-${inputs.flightLevel}`}
-                defaultValue={inputs.flightLevel}
-                onBlur={(e) => handleManualEntry('flightLevel', e.target.value, 280, maxOperatingFL)}
+                key={`fl-${mission.cruiseFL}`}
+                defaultValue={mission.cruiseFL}
+                onBlur={(e) => updateMissionField('cruiseFL', e.target.value, 280, maxOperatingFL)}
                 className="touch-input-field"
               />
             </div>
 
-            {inputs.speedMode === 'ECON' ? (
+            {mission.speedMode === 'ECON' ? (
               <div className="input-grid-spatial" style={{ gridColumn: 'span 2', gap: '20px' }}>
                 <div className="input-cell-spatial">
                   <label>Cost Index (CI)</label>
                   <input 
                     type="number" 
-                    key={`ci-${inputs.costIndex}`}
-                    defaultValue={inputs.costIndex}
-                    onBlur={(e) => handleManualEntry('costIndex', e.target.value, 0, 120)}
+                    key={`ci-${mission.costIndex}`}
+                    defaultValue={mission.costIndex}
+                    onBlur={(e) => updateMissionField('costIndex', e.target.value, 0, 120)}
                     className="touch-input-field"
                   />
                 </div>
@@ -165,9 +122,9 @@ export default function CalculatorCruise() {
                   <label>Wind Velocity (kt)</label>
                   <input 
                     type="number" 
-                    key={`wind-${inputs.wind}`}
-                    defaultValue={inputs.wind}
-                    onBlur={(e) => handleManualEntry('wind', e.target.value, -200, 200)}
+                    key={`wind-${mission.wind}`}
+                    defaultValue={mission.wind}
+                    onBlur={(e) => updateMissionField('wind', e.target.value, -200, 200)}
                     className="touch-input-field"
                   />
                 </div>
@@ -179,9 +136,9 @@ export default function CalculatorCruise() {
                   <input 
                     type="number" 
                     step="0.01"
-                    key={`mach-${inputs.manualMach}`}
-                    defaultValue={inputs.manualMach}
-                    onBlur={(e) => handleManualEntry('manualMach', e.target.value, 0.70, 0.82)}
+                    key={`mach-${mission.manualMach}`}
+                    defaultValue={mission.manualMach}
+                    onBlur={(e) => updateMissionField('manualMach', e.target.value, 0.70, 0.82)}
                     className="touch-input-field"
                   />
                 </div>
@@ -189,9 +146,9 @@ export default function CalculatorCruise() {
                   <label>Wind Velocity (kt)</label>
                   <input 
                     type="number" 
-                    key={`wind-${inputs.wind}`}
-                    defaultValue={inputs.wind}
-                    onBlur={(e) => handleManualEntry('wind', e.target.value, -200, 200)}
+                    key={`wind-${mission.wind}`}
+                    defaultValue={mission.wind}
+                    onBlur={(e) => updateMissionField('wind', e.target.value, -200, 200)}
                     className="touch-input-field"
                   />
                 </div>
@@ -202,9 +159,9 @@ export default function CalculatorCruise() {
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
-                key={`isa-${inputs.isaDev}`}
-                defaultValue={inputs.isaDev}
-                onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
+                key={`isa-${mission.isaDev}`}
+                defaultValue={mission.isaDev}
+                onBlur={(e) => updateMissionField('isaDev', e.target.value, -30, 30)}
                 className="touch-input-field"
               />
             </div>
@@ -214,8 +171,8 @@ export default function CalculatorCruise() {
             <label className="toggle-container">
               <input 
                 type="checkbox" 
-                checked={inputs.antiIce} 
-                onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+                checked={mission.antiIce} 
+                onChange={(e) => updateMissionField('antiIce', e.target.checked)} 
               />
               <span className="toggle-label">Engine Bleed Anti-Ice active</span>
             </label>
@@ -249,6 +206,12 @@ export default function CalculatorCruise() {
           </div>
         </div>
       </div>
+
+      {/* Compliance Reference Footer Block */}
+      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+        <span>DATA REFERENCE: FCOM PART PI-ECON (EMB-195E2)</span>
+        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
+      </footer>
     </div>
   );
 }

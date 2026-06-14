@@ -78,7 +78,7 @@ async function parseFile(filePath, isNavaid, waypointsDict) {
   console.log(`✔️ Processed ${count} records from ${path.basename(filePath)}`);
 }
 
-async function parseAirports(filePath, waypointsDict) {
+async function parseAirportsAndBuildDb(filePath, waypointsDict, airportsDict) {
   if (!fs.existsSync(filePath)) {
     console.error(`❌ Source asset missing at: ${filePath}`);
     return;
@@ -96,11 +96,13 @@ async function parseAirports(filePath, waypointsDict) {
     if (!line || line.startsWith('#')) continue;
 
     const parts = line.split('|');
-    if (parts.length < 5) continue;
+    if (parts.length < 6) continue;
 
     const icao = parts[1].trim().toUpperCase();
+    const name = parts[2].trim();
     const lat = parseFloat(parts[3]) / 1000000;
     const lon = parseFloat(parts[4]) / 1000000;
+    const elevation = parseInt(parts[5], 10);
 
     if (lat >= LAT_MIN && lat <= LAT_MAX && lon >= LON_MIN && lon <= LON_MAX) {
       const entry = {
@@ -113,12 +115,23 @@ async function parseAirports(filePath, waypointsDict) {
       count++;
 
       // Also map 3-letter IATA code if it's a standard Canadian airport (starts with C)
+      let iata = '';
       if (icao.startsWith('C') && icao.length === 4) {
-        const iata = icao.slice(1);
+        iata = icao.slice(1);
         if (!waypointsDict[iata]) {
           waypointsDict[iata] = entry;
         }
       }
+
+      // Add to airports database dictionary
+      airportsDict[icao] = {
+        iata: iata || icao,
+        name: name,
+        elevation: isNaN(elevation) ? 0 : elevation,
+        coords: [Math.round(lat * 10000) / 10000, Math.round(lon * 10000) / 10000],
+        mag_var: 0,
+        runways: []
+      };
     }
   }
   console.log(`✔️ Processed ${count} airport records from ${path.basename(filePath)}`);
@@ -130,6 +143,11 @@ async function compileMasterNavDatabase() {
   const masterNavDb = {
     database_cycle: "2606",
     waypoints: {}
+  };
+
+  const airportDb = {
+    database_cycle: "2606",
+    airports: {}
   };
 
   const waypointSource = path.join(SOURCE_NAV_DATA_DIR, 'Waypoints.txt');
@@ -144,8 +162,8 @@ async function compileMasterNavDatabase() {
   // Parse fixes/waypoints first
   await parseFile(waypointSource, false, masterNavDb.waypoints);
 
-  // Parse airports next
-  await parseAirports(airportSource, masterNavDb.waypoints);
+  // Parse airports next and build the airports database
+  await parseAirportsAndBuildDb(airportSource, masterNavDb.waypoints, airportDb.airports);
 
   // Parse navaids (VOR/NDB) next, overriding or adding
   await parseFile(navaidSource, true, masterNavDb.waypoints);
@@ -156,9 +174,15 @@ async function compileMasterNavDatabase() {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  // Write nav_db.json
   fs.writeFileSync(OUTPUT_FILE_PATH, JSON.stringify(masterNavDb, null, 2), 'utf-8');
   console.log(`✅ Success! High-fidelity Navlog database written to: ${OUTPUT_FILE_PATH}`);
-  console.log(`📦 Compiled ${Object.keys(masterNavDb.waypoints).length} regional navigation fixes safely.`);
+
+  // Write airport_db.json
+  const airportDbPath = path.resolve(dir, 'airport_db.json');
+  fs.writeFileSync(airportDbPath, JSON.stringify(airportDb, null, 2), 'utf-8');
+  console.log(`✅ Success! Airport database written to: ${airportDbPath}`);
+  console.log(`📦 Compiled ${Object.keys(masterNavDb.waypoints).length} regional navigation fixes and ${Object.keys(airportDb.airports).length} airports safely.`);
 }
 
 compileMasterNavDatabase();
