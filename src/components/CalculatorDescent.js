@@ -155,6 +155,7 @@ export default function CalculatorDescent() {
               <label>Cruise Level (FL)</label>
               <input 
                 type="number" 
+                key={mission.cruiseFL}
                 defaultValue={mission.cruiseFL}
                 onBlur={(e) => updateMissionField('cruiseFL', e.target.value)}
                 className="touch-input-field"
@@ -165,6 +166,7 @@ export default function CalculatorDescent() {
               <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
+                key={inputs.targetAltitude}
                 defaultValue={inputs.targetAltitude}
                 onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 0, 15000)}
                 className="touch-input-field"
@@ -175,6 +177,7 @@ export default function CalculatorDescent() {
               <label>Field Elev (ft)</label>
               <input 
                 type="number" 
+                key={inputs.fieldElevation}
                 defaultValue={inputs.fieldElevation}
                 onBlur={(e) => handleManualEntry('fieldElevation', e.target.value, -500, 14000)}
                 className="touch-input-field"
@@ -185,6 +188,7 @@ export default function CalculatorDescent() {
               <label>Arrival Altimeter (QNH)</label>
               <input 
                 type="number" 
+                key={inputs.arrivalQnh}
                 step="0.01"
                 defaultValue={inputs.arrivalQnh}
                 onBlur={(e) => handleManualEntry('arrivalQnh', e.target.value, 28.00, 31.00)}
@@ -227,6 +231,7 @@ export default function CalculatorDescent() {
               <label>Destination OAT (°C)</label>
               <input 
                 type="number" 
+                key={inputs.destinationOAT}
                 defaultValue={inputs.destinationOAT}
                 onBlur={(e) => handleManualEntry('destinationOAT', e.target.value, -50, 50)}
                 className="touch-input-field"

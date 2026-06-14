@@ -126,8 +126,10 @@ export default function CalculatorCruise() {
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                defaultValue={mission.weight}
-                onBlur={(e) => updateMissionField('weight', e.target.value)}
+                key={mission.weight}
+                value={mission.weight}
+                disabled
+                style={{ opacity: 0.7, cursor: 'not-allowed' }}
                 className="touch-input-field"
               />
             </div>
@@ -136,6 +138,7 @@ export default function CalculatorCruise() {
               <label>Flight Level (FL)</label>
               <input 
                 type="number" 
+                key={mission.cruiseFL}
                 defaultValue={mission.cruiseFL}
                 onBlur={(e) => updateMissionField('cruiseFL', e.target.value)}
                 className="touch-input-field"

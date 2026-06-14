@@ -5,7 +5,7 @@ import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
 import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
 
 export default function CalculatorClimb() {
-  const { mission, climbPerf, loading } = useMission();
+  const { mission, updateMissionField, climbPerf, loading } = useMission();
 
   const [inputs, setInputs] = useState({
     climbWeight: 115000, 
@@ -26,9 +26,10 @@ export default function CalculatorClimb() {
       climbWeight: mission.weight ? mission.weight : prev.climbWeight,
       isaDev: mission.isaDev !== '' ? mission.isaDev : prev.isaDev,
       fieldElevation: mission.departureElev !== '' ? mission.departureElev : prev.fieldElevation,
-      qnh: mission.departureQnh !== undefined && mission.departureQnh !== '' ? mission.departureQnh : prev.qnh
+      qnh: mission.departureQnh !== undefined && mission.departureQnh !== '' ? mission.departureQnh : prev.qnh,
+      targetAltitude: mission.cruiseFL !== '' ? mission.cruiseFL * 100 : prev.targetAltitude
     }));
-  }, [mission.weight, mission.isaDev, mission.departureElev, mission.departureQnh]);
+  }, [mission.weight, mission.isaDev, mission.departureElev, mission.departureQnh, mission.cruiseFL]);
 
   const handleManualEntry = (key, value, min, max) => {
     let parsed = key === 'qnh' ? parseFloat(value) : parseInt(value, 10);
@@ -38,6 +39,10 @@ export default function CalculatorClimb() {
     if (parsed > max) parsed = max;
 
     setInputs(prev => ({ ...prev, [key]: parsed }));
+
+    if (key === 'targetAltitude') {
+      updateMissionField('cruiseFL', Math.round(parsed / 100));
+    }
   };
 
   // Performance Math Initialization
@@ -176,8 +181,9 @@ export default function CalculatorClimb() {
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                defaultValue={inputs.climbWeight}
-                onBlur={(e) => handleManualEntry('climbWeight', e.target.value, 85000, 135000)}
+                value={mission.weight || inputs.climbWeight}
+                disabled
+                style={{ opacity: 0.7, cursor: 'not-allowed' }}
                 className="touch-input-field"
               />
             </div>
@@ -186,6 +192,7 @@ export default function CalculatorClimb() {
               <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
+                key={inputs.targetAltitude}
                 defaultValue={inputs.targetAltitude}
                 onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 5000, 41000)}
                 className="touch-input-field"
@@ -196,6 +203,7 @@ export default function CalculatorClimb() {
               <label>Field Elev (ft)</label>
               <input 
                 type="number" 
+                key={inputs.fieldElevation}
                 defaultValue={inputs.fieldElevation}
                 onBlur={(e) => handleManualEntry('fieldElevation', e.target.value, -500, 14000)}
                 className="touch-input-field"
@@ -206,6 +214,7 @@ export default function CalculatorClimb() {
               <label>Altimeter (QNH)</label>
               <input 
                 type="number" 
+                key={inputs.qnh}
                 step="0.01"
                 defaultValue={inputs.qnh}
                 onBlur={(e) => handleManualEntry('qnh', e.target.value, 28.00, 31.00)}
@@ -237,6 +246,7 @@ export default function CalculatorClimb() {
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
+                key={inputs.isaDev}
                 defaultValue={inputs.isaDev}
                 onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
                 className="touch-input-field"
