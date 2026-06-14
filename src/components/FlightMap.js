@@ -38,29 +38,32 @@ export default function FlightMap() {
       });
   }, []);
 
-  const parseFlightRoute = () => {
+  const parseFlightRoute = (currentInput = routeInput) => {
     if (!navDb || !navDb.waypoints) return;
     
-    const elements = routeInput.toUpperCase().trim().split(/\s+/);
+    const elements = currentInput.toUpperCase().trim().split(/\s+/);
     const resolvedCoords = [];
     const initializedLog = [];
 
-    elements.forEach(ident => {
+    elements.forEach((ident, index) => {
       if (navDb.waypoints[ident]) {
         const fix = navDb.waypoints[ident];
         resolvedCoords.push([fix.lat, fix.lon]);
         
-        // Instantiate deep tracking parameters for each verified route fix
+        // Look up existing matching waypoint log entry to preserve entered data
+        const existing = navLog.find((item, idx) => item.ident === ident && idx === index) || 
+                         navLog.find(item => item.ident === ident);
+
         initializedLog.push({
           ident,
           type: fix.type,
           lat: fix.lat,
           lon: fix.lon,
-          wind: 0,
-          fl: 350,
-          sat: -45,
-          plannedFuel: 5000,
-          actualFuel: 5000
+          wind: existing ? existing.wind : 0,
+          fl: existing ? existing.fl : 350,
+          sat: existing ? existing.sat : -45,
+          plannedFuel: existing ? existing.plannedFuel : 5000,
+          actualFuel: existing ? existing.actualFuel : 5000
         });
       }
     });
@@ -189,8 +192,16 @@ export default function FlightMap() {
               <input 
                 type="text" 
                 value={routeInput}
-                onChange={(e) => setRouteString(e.target.value)}
-                onBlur={parseFlightRoute}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRouteString(val);
+                  parseFlightRoute(val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.target.blur();
+                  }
+                }}
                 className="touch-input-field"
                 style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
               />
