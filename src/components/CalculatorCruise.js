@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCorrectedCostIndex } from '../engine/dynamicModulators.js';
-import { interpolate2D } from '../engine/interpolation.js';
+import { interpolate2D, getLegalMaxAltitude } from '../engine/interpolation.js';
 import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 
 export default function CalculatorCruise() {
@@ -40,20 +40,24 @@ export default function CalculatorCruise() {
   const weightKg = inputs.weight / 2.20462;
   
   let targetMach = 0.78; // Fallback default
+  let isOutOfEnvelope = false;
   if (cruiseData && cruiseData.cruise_mach_matrix && cruiseData.cruise_mach_matrix["33000"]) {
     const matrix = cruiseData.cruise_mach_matrix["33000"];
     // Bounded search
-    targetMach = interpolate2D(
+    const interpResult = interpolate2D(
       weightLbs,
       correctedCI,
       matrix.weights,
       matrix.cost_index_headers,
       matrix.data
     );
+    if (interpResult === null) {
+      isOutOfEnvelope = true;
+      targetMach = 0.74; // safe fallback speed
+    } else {
+      targetMach = Math.round(interpResult * 100) / 100;
+    }
   }
-
-  // Round target Mach to 2 decimal places
-  targetMach = Math.round(targetMach * 100) / 100;
 
   // Temperature calculations
   const isaTemp = getISATemperature(inputs.flightLevel * 100);
@@ -78,8 +82,8 @@ export default function CalculatorCruise() {
   const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
 
   // Optimal Flight Level (higher altitude is optimal for lower weights)
-  const optimalFL = Math.round((410 - (inputs.weight - 85000) * 0.00018) / 10) * 10;
-  const maxOperatingFL = 410; // Structural limit
+  const maxOperatingFL = getLegalMaxAltitude(inputs.weight);
+  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (inputs.weight - 85000) * 0.00018) / 10) * 10);
 
   return (
     <div className="panel-container">
@@ -159,7 +163,9 @@ export default function CalculatorCruise() {
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Target Speed</span>
-              <span className="value">M {targetMach.toFixed(2)}</span>
+              <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>
+                {isOutOfEnvelope ? 'OUT OF ENV' : `M ${targetMach.toFixed(2)}`}
+              </span>
             </div>
             <div className="metric-box">
               <span className="label">Total Fuel Flow</span>
@@ -195,7 +201,9 @@ export default function CalculatorCruise() {
           </div>
 
           <div className="alert-banner info">
-            {inputs.flightLevel < optimalFL ? (
+            {isOutOfEnvelope ? (
+              <span><strong>WARNING:</strong> Flight level/weight intersection falls into an aerodynamic envelope gap. Decrease flight level to restore 1.3g buffet margin guardrail.</span>
+            ) : inputs.flightLevel < optimalFL ? (
               <span><strong>Optimizer recommendation:</strong> Climb to <strong>FL {optimalFL}</strong> yields a <strong>{((optimalFL - inputs.flightLevel) * 0.4).toFixed(1)}% fuel saving</strong>.</span>
             ) : inputs.flightLevel > optimalFL ? (
               <span><strong>Optimizer recommendation:</strong> Descent to <strong>FL {optimalFL}</strong> offers better thrust-to-drag and wind profile efficiency.</span>
