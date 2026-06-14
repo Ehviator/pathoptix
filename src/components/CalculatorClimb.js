@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
+import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
+import { calculateClimbPerformance } from '../engine/kinematics.js';
 
 export default function CalculatorClimb() {
   const [inputs, setInputs] = useState({
@@ -30,37 +32,18 @@ export default function CalculatorClimb() {
   const targetedIAS = modulateClimbSpeed(290, climbWeightKg, inputs.isaDev);
 
   // Pressure Altitude & Environment Normalization
-  const pressureAltitudeOffset = Math.round((29.92 - inputs.qnh) * 1000);
-  const effectiveClimbAlt = Math.max(0, inputs.targetAltitude - inputs.fieldElevation + pressureAltitudeOffset);
+  const trueTargetAlt = calculateTruePressureAlt(inputs.targetAltitude, inputs.qnh);
+  const trueFieldAlt = calculateTruePressureAlt(inputs.fieldElevation, inputs.qnh);
+  const effectiveClimbAlt = Math.max(0, trueTargetAlt - trueFieldAlt);
   
-  // Time to Climb Dynamics
-  const baseTimeToClimb = (effectiveClimbAlt / 1000) * 0.38; 
-  const weightTimeFactor = (inputs.climbWeight - 90000) * 0.00012;
-  const tempTimeFactor = inputs.isaDev > 0 ? inputs.isaDev * 0.15 : 0;
-  const atcPenaltyTime = inputs.atcSpeedRestriction && effectiveClimbAlt > 10000 ? 1.8 : 0;
-  const antiIcePenaltyTime = inputs.antiIce ? (effectiveClimbAlt / 1000) * 0.06 : 0;
-  
-  const timeToClimb = Math.max(1, Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + atcPenaltyTime + antiIcePenaltyTime));
-
-  // Ground Distance (TOC) with Multi-Tier Wind Integration
-  const timeBelow180 = Math.min(timeToClimb, 10); // Approximation of time spent in lower stratum
-  const timeAbove180 = Math.max(0, timeToClimb - 10);
-  
-  const windEffectBelow = (inputs.windBelow180 * (timeBelow180 / 60));
-  const windEffectAbove = (inputs.windAbove180 * (timeAbove180 / 60));
-  const totalWindDisplacement = windEffectBelow + windEffectAbove;
-
-  const stillAirDistance = Math.round(15 + (climbWeightKg - 40000) * 0.0008 + (effectiveClimbAlt) * 0.0018 + inputs.isaDev * 0.25);
-  const climbDistance = Math.max(5, Math.round(stillAirDistance + totalWindDisplacement));
-
-  // Fuel Flow Modulators
-  const baseClimbFuel = (effectiveClimbAlt / 1000) * 45; 
-  const weightFuelFactor = (inputs.climbWeight - 90000) * 0.015;
-  const tempFuelFactor = inputs.isaDev > 0 ? inputs.isaDev * 12 : 0;
-  const antiIceFuelPenalty = inputs.antiIce ? (effectiveClimbAlt / 1000) * 14 : 0;
-  
-  const fuelBurned = Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + antiIceFuelPenalty);
-  const averageROC = timeToClimb > 0 ? Math.round(effectiveClimbAlt / timeToClimb) : 0;
+  // Climb Heuristics
+  const {
+    timeToClimb,
+    fuelBurned,
+    climbDistance,
+    averageROC,
+    totalWindDisplacement
+  } = calculateClimbPerformance(inputs, effectiveClimbAlt);
 
   return (
     <div className="panel-container">

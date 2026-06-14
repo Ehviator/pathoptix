@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useMission } from '../context/MissionContext.js';
+import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
+import { calculateDescentPerformance } from '../engine/kinematics.js';
 
 export default function CalculatorDescent() {
   const { mission, updateMissionField } = useMission();
@@ -25,44 +27,18 @@ export default function CalculatorDescent() {
   };
 
   // Pressure Altitude & Environment Normalization
-  const pressureAltitudeOffset = Math.round((29.92 - inputs.arrivalQnh) * 1000);
-  const trueTargetAlt = Math.max(0, inputs.targetAltitude + pressureAltitudeOffset);
-  const altDiff = (mission.cruiseFL * 100) - trueTargetAlt;
+  const trueTargetAlt = calculateTruePressureAlt(inputs.targetAltitude, inputs.arrivalQnh);
   
-  // Standard aerodynamic base profile line
-  const baseTOD = (altDiff / 1000) * 3;
-  const fpaFactor = 3.0 / inputs.fpa;
-  const speedFactor = 1.0 + (inputs.descentSpeed - 270) * 0.0025;
-  
-  // E-Jet Specific FADEC Flight Idle Icing Penalty (Higher N1 = Shallower Descent)
-  const icingDistancePenalty = inputs.flightIdleIcing ? 1.15 : 1.0;
-
-  // Horizontal Deceleration Segment (Level or shallow flight to bleed speed at transition altitude)
-  const decelerationDistance = trueTargetAlt < inputs.speedTransitionAlt && inputs.descentSpeed > 250 
-    ? Math.max(0, (inputs.descentSpeed - 250) * 0.15) 
-    : 0;
-  
-  // High-wind correction with a logarithmic decay model
-  const boundedWind = Math.max(-200, Math.min(200, inputs.descentWind));
-  const windSign = boundedWind >= 0 ? 1 : -1;
-  const windCorrection = windSign * Math.log10(1 + Math.abs(boundedWind) * 0.15) * (altDiff / 1000) * 1.65;
-  
-  const todDistance = Math.round(Math.max(10, (baseTOD * fpaFactor * speedFactor * icingDistancePenalty) + windCorrection + decelerationDistance));
-  
-  // Kinematics and Timings
-  const averageTAS = Math.round(350 - (altDiff / 1000) * 2);
-  const averageGS = Math.max(100, averageTAS + boundedWind);
-  
-  const timeMin = (todDistance / averageGS) * 60;
-  const timeFormatted = `${Math.floor(timeMin)}:${Math.round((timeMin % 1) * 60).toString().padStart(2, '0')} min`;
-
-  const vsi = Math.round(-1 * averageGS * 101.268 * Math.tan((inputs.fpa * Math.PI) / 180));
-  const glideRatio = altDiff > 0 ? Math.round(((todDistance * 6076.1) / altDiff) * 10) / 10 : 0;
-
-  // Fuel & Cabin metrics
-  const baseFuelBurnRate = inputs.flightIdleIcing ? 3.6 : 3.0; 
-  const fuelFlowLbs = Math.round(todDistance * baseFuelBurnRate + (boundedWind * 0.11));
-  const cabinRate = Math.round(-320 + (vsi + 1800) * 0.08);
+  // Descent Heuristics
+  const {
+    todDistance,
+    timeFormatted,
+    vsi,
+    glideRatio,
+    fuelFlowLbs,
+    cabinRate,
+    decelerationDistance
+  } = calculateDescentPerformance(inputs, mission.cruiseFL, trueTargetAlt);
 
   return (
     <div className="panel-container">
