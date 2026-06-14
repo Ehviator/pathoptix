@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import CalculatorGround from './components/CalculatorGround';
+import CalculatorClimb from './components/CalculatorClimb';
 import CalculatorCruise from './components/CalculatorCruise';
 import CalculatorDescent from './components/CalculatorDescent';
+import CalculatorHolding from './components/CalculatorHolding';
 import EmergencySuite from './components/EmergencySuite';
 
 export default function App() {
@@ -11,10 +13,14 @@ export default function App() {
     switch (activeTab) {
       case 'ground':
         return <CalculatorGround />;
+      case 'climb':
+        return <CalculatorClimb />;
       case 'cruise':
         return <CalculatorCruise />;
       case 'descent':
         return <CalculatorDescent />;
+      case 'holding':
+        return <CalculatorHolding />;
       case 'emergency':
         return <EmergencySuite />;
       default:
@@ -37,7 +43,13 @@ export default function App() {
             className={`nav-tab-btn ${activeTab === 'ground' ? 'active' : ''}`}
             onClick={() => setActiveTab('ground')}
           >
-            <span className="icon">🛫</span> Ground Perf
+            <span className="icon">🚖</span> Ground Taxi
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'climb' ? 'active' : ''}`}
+            onClick={() => setActiveTab('climb')}
+          >
+            <span className="icon">🛫</span> Climb
           </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'cruise' ? 'active' : ''}`}
@@ -50,6 +62,12 @@ export default function App() {
             onClick={() => setActiveTab('descent')}
           >
             <span className="icon">📉</span> Descent FPA
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'holding' ? 'active' : ''}`}
+            onClick={() => setActiveTab('holding')}
+          >
+            <span className="icon">🔄</span> Terminal Holding
           </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'emergency' ? 'active' : ''}`}
