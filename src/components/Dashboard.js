@@ -1,8 +1,27 @@
 import React from 'react';
 import { useMission } from '../context/MissionContext.js';
+import { parseWsiBrief } from '../services/wsiParser.js';
 
 export default function Dashboard() {
   const { mission, updateMissionField, takeoffWeight, minimumDiversionFuel, totalDistance, weather } = useMission();
+
+  const handleDatalinkPaste = (e) => {
+    const text = e.target.value;
+    if (!text) return;
+
+    try {
+      const parsed = parseWsiBrief(text);
+      if (parsed) {
+        Object.entries(parsed).forEach(([key, val]) => {
+          if (val !== undefined && val !== null) {
+            updateMissionField(key, val);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error parsing pasted WSI flight plan:", err);
+    }
+  };
 
   // Landing Fuel margin calculation
   const routeBurn = mission.plannedFuelBurn || 0;
@@ -50,6 +69,33 @@ export default function Dashboard() {
         <p>Monitor airline dispatch parameters, configure aircraft weights, and verify legal route fuel reserve compliance.</p>
       </div>
 
+      {/* WSI Pilotbrief & ACARS Ingestion Panel */}
+      <div className="glass-panel" style={{ marginBottom: '24px', padding: '20px' }}>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: 'var(--accent-cyan)' }}>WSI Pilotbrief & ACARS Flight Plan Ingestion</h3>
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          Paste the 4-line ACARS Datalink block or full WSI Pilotbrief flight plan release below to auto-populate routing, passenger counts, aircraft weights, and reserve fuel calculations.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <textarea
+            placeholder="Paste ACARS Flight Plan or WSI Briefing text here..."
+            onChange={handleDatalinkPaste}
+            className="touch-input-field"
+            rows={4}
+            style={{
+              width: '100%',
+              background: 'rgba(0, 0, 0, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '12px',
+              color: '#fff',
+              fontFamily: 'monospace',
+              fontSize: '13px',
+              resize: 'vertical'
+            }}
+          />
+        </div>
+      </div>
+
       {/* UI Warning Feedback: Winter Operations & Icing Risk Banner */}
       {isIcingRisk && (
         <div className="alert-banner danger" style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '0 0 24px 0', background: 'rgba(255, 74, 74, 0.12)', border: '1px solid rgba(255, 74, 74, 0.25)' }}>
@@ -73,6 +119,7 @@ export default function Dashboard() {
               <label>Zero Fuel Weight (lbs)</label>
               <input 
                 type="number" 
+                key={mission.zeroFuelWeight}
                 defaultValue={mission.zeroFuelWeight}
                 onBlur={(e) => updateMissionField('zeroFuelWeight', e.target.value, 60000, 110000)}
                 className="touch-input-field"
@@ -83,6 +130,7 @@ export default function Dashboard() {
               <label>Block Fuel (lbs)</label>
               <input 
                 type="number" 
+                key={mission.blockFuel}
                 defaultValue={mission.blockFuel}
                 onBlur={(e) => updateMissionField('blockFuel', e.target.value, 2000, 30000)}
                 className="touch-input-field"
@@ -93,6 +141,7 @@ export default function Dashboard() {
               <label>Taxi Fuel (lbs)</label>
               <input 
                 type="number" 
+                key={mission.taxiFuel}
                 defaultValue={mission.taxiFuel}
                 onBlur={(e) => updateMissionField('taxiFuel', e.target.value, 100, 2000)}
                 className="touch-input-field"
@@ -103,6 +152,7 @@ export default function Dashboard() {
               <label>Alternate Fuel (lbs)</label>
               <input 
                 type="number" 
+                key={mission.alternateFuel}
                 defaultValue={mission.alternateFuel}
                 onBlur={(e) => updateMissionField('alternateFuel', e.target.value, 0, 10000)}
                 className="touch-input-field"
@@ -113,6 +163,7 @@ export default function Dashboard() {
               <label>Final Reserve Fuel (lbs)</label>
               <input 
                 type="number" 
+                key={mission.finalReserveFuel}
                 defaultValue={mission.finalReserveFuel}
                 onBlur={(e) => updateMissionField('finalReserveFuel', e.target.value, 1000, 10000)}
                 className="touch-input-field"
@@ -123,6 +174,7 @@ export default function Dashboard() {
               <label>Planned Fuel Burn (lbs)</label>
               <input 
                 type="number" 
+                key={mission.plannedFuelBurn}
                 defaultValue={mission.plannedFuelBurn}
                 onBlur={(e) => updateMissionField('plannedFuelBurn', e.target.value, 0, 25000)}
                 className="touch-input-field"
@@ -172,9 +224,72 @@ export default function Dashboard() {
               <label>Operational Cost Index (CI)</label>
               <input 
                 type="number" 
+                key={mission.costIndex}
                 defaultValue={mission.costIndex}
                 onBlur={(e) => updateMissionField('costIndex', e.target.value, 0, 150)}
                 className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Flight Number</label>
+              <input 
+                type="text" 
+                key={mission.flightNumber}
+                defaultValue={mission.flightNumber}
+                onBlur={(e) => updateMissionField('flightNumber', e.target.value.toUpperCase())}
+                className="touch-input-field"
+                placeholder="e.g. POE297"
+                style={{ textTransform: 'uppercase' }}
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Passengers (Pax)</label>
+              <input 
+                type="number" 
+                key={mission.pax}
+                defaultValue={mission.pax}
+                onBlur={(e) => updateMissionField('pax', e.target.value, 0, 150)}
+                className="touch-input-field"
+                placeholder="0"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>MAC %</label>
+              <input 
+                type="number" 
+                key={mission.mac}
+                defaultValue={mission.mac}
+                onBlur={(e) => updateMissionField('mac', e.target.value, 0, 50)}
+                step="0.1"
+                className="touch-input-field"
+                placeholder="26.0"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Average Wind Dir (°)</label>
+              <input 
+                type="number" 
+                key={mission.averageWindDir}
+                defaultValue={mission.averageWindDir}
+                onBlur={(e) => updateMissionField('averageWindDir', e.target.value, 0, 360)}
+                className="touch-input-field"
+                placeholder="279"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Average Wind Speed (kt)</label>
+              <input 
+                type="number" 
+                key={mission.averageWindSpeed}
+                defaultValue={mission.averageWindSpeed}
+                onBlur={(e) => updateMissionField('averageWindSpeed', e.target.value, 0, 150)}
+                className="touch-input-field"
+                placeholder="47"
               />
             </div>
 
@@ -233,6 +348,30 @@ export default function Dashboard() {
               <span>Block Fuel Loaded</span>
               <span>{mission.blockFuel.toLocaleString()} lbs</span>
             </div>
+            {mission.flightNumber && (
+              <div className="table-row">
+                <span>Flight Number</span>
+                <span className="val highlight" style={{ textTransform: 'uppercase' }}>{mission.flightNumber}</span>
+              </div>
+            )}
+            {mission.pax && (
+              <div className="table-row">
+                <span>Passengers (Pax)</span>
+                <span>{mission.pax} P</span>
+              </div>
+            )}
+            {mission.mac && (
+              <div className="table-row">
+                <span>MAC %</span>
+                <span>{mission.mac.toFixed(1)}%</span>
+              </div>
+            )}
+            {(mission.averageWindDir || mission.averageWindSpeed) && (
+              <div className="table-row">
+                <span>Average Cruise Wind</span>
+                <span>{mission.averageWindDir || 0}° @ {mission.averageWindSpeed || 0} kt</span>
+              </div>
+            )}
           </div>
 
           {/* Regulatory Warning Alerts */}

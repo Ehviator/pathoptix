@@ -35,7 +35,12 @@ export function MissionProvider({ children }) {
     departureQnh: 29.92,
     arrivalQnh: 29.92,
     arrivalElev: '',
-    arrivalOat: ''
+    arrivalOat: '',
+    pax: '',
+    mac: '',
+    flightNumber: '',
+    averageWindDir: '',
+    averageWindSpeed: ''
   });
 
   const [navDb, setNavDb] = useState(null);
@@ -80,7 +85,7 @@ export function MissionProvider({ children }) {
   }, []);
 
   // Non-destructive flight route parser & reconciliation algorithm
-  const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL, airways) => {
+  const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL, airways, blockFuel, taxiFuel, plannedFuelBurn, alternateFuel, finalReserveFuel) => {
     if (!database || !database.waypoints) return { newLog: [], newDistance: 0 };
 
     const elements = routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
@@ -125,19 +130,39 @@ export function MissionProvider({ children }) {
       }
     }
 
-    const newLog = [];
+    // Pass 1: calculate total distance and cumulative distances
     let accumulatedDistance = 0;
-    const consumedIndices = new Set();
-
+    const cumulativeDistances = [];
     for (let i = 0; i < waypointsToLog.length; i++) {
       const ident = waypointsToLog[i];
       const fix = database.waypoints[ident];
-      
       let legDist = 0;
       if (i > 0) {
         const prevFix = database.waypoints[waypointsToLog[i - 1]];
         legDist = calculateDistanceNM(prevFix.lat, prevFix.lon, fix.lat, fix.lon);
         accumulatedDistance += legDist;
+      }
+      cumulativeDistances.push(accumulatedDistance);
+    }
+    const totalRouteDistance = accumulatedDistance;
+
+    // Pass 2: build newLog
+    const newLog = [];
+    const consumedIndices = new Set();
+    const takeoffFuel = (blockFuel || 0) - (taxiFuel || 0);
+    // Fallback: if plannedFuelBurn is empty or 0, use block - taxi - alternate - reserve
+    const plannedBurn = plannedFuelBurn || Math.max(0, (blockFuel || 0) - (taxiFuel || 0) - (alternateFuel || 0) - (finalReserveFuel || 0));
+
+    for (let i = 0; i < waypointsToLog.length; i++) {
+      const ident = waypointsToLog[i];
+      const fix = database.waypoints[ident];
+      const legDist = i > 0 ? cumulativeDistances[i] - cumulativeDistances[i - 1] : 0;
+      const cumulativeDistance = cumulativeDistances[i];
+
+      // Calculate proportional fuel
+      let calculatedFuel = takeoffFuel;
+      if (totalRouteDistance > 0) {
+        calculatedFuel = Math.max(0, Math.round(takeoffFuel - (plannedBurn * (cumulativeDistance / totalRouteDistance))));
       }
 
       // Match existing waypoint in current navLog to preserve its custom pilot inputs
@@ -157,7 +182,9 @@ export function MissionProvider({ children }) {
           ...existing,
           legDistance: legDist,
           tas: currentTAS,
-          gs: Math.max(100, currentTAS + existing.wind)
+          gs: Math.max(100, currentTAS + existing.wind),
+          plannedFuel: existing.isManualPlanned ? existing.plannedFuel : calculatedFuel,
+          actualFuel: existing.isManualActual ? existing.actualFuel : calculatedFuel
         });
       } else {
         // Initialize new waypoint with defaults
@@ -173,13 +200,13 @@ export function MissionProvider({ children }) {
           sat: -45,
           tas: initialTAS,
           gs: initialTAS,
-          plannedFuel: 5000,
-          actualFuel: 5000
+          plannedFuel: calculatedFuel,
+          actualFuel: calculatedFuel
         });
       }
     }
 
-    return { newLog, newDistance: accumulatedDistance };
+    return { newLog, newDistance: totalRouteDistance };
   };
 
   // Safe ref tracking to read the latest navLog state without causing infinite rendering loops in useEffect
@@ -188,10 +215,21 @@ export function MissionProvider({ children }) {
     navLogRef.current = navLog;
   }, [navLog]);
 
-  // Synchronize NavLog when routeString, cruiseFL, or navDb changes
+  // Synchronize NavLog when routeString, cruiseFL, navDb, blockFuel, taxiFuel, or plannedFuelBurn changes
   useEffect(() => {
     if (navDb) {
-      const { newLog, newDistance } = parseFlightRoute(mission.routeString, navLogRef.current, navDb, mission.cruiseFL, airwaysDb);
+      const { newLog, newDistance } = parseFlightRoute(
+        mission.routeString,
+        navLogRef.current,
+        navDb,
+        mission.cruiseFL,
+        airwaysDb,
+        mission.blockFuel,
+        mission.taxiFuel,
+        mission.plannedFuelBurn,
+        mission.alternateFuel,
+        mission.finalReserveFuel
+      );
       setNavLog(newLog);
       setTotalDistance(newDistance);
 
@@ -208,7 +246,7 @@ export function MissionProvider({ children }) {
         });
       }
     }
-  }, [navDb, mission.routeString, mission.cruiseFL, airwaysDb]);
+  }, [navDb, mission.routeString, mission.cruiseFL, airwaysDb, mission.blockFuel, mission.taxiFuel, mission.plannedFuelBurn, mission.alternateFuel, mission.finalReserveFuel]);
 
   // Keep routeString synchronized with departure and arrival changes
   useEffect(() => {
@@ -336,11 +374,12 @@ export function MissionProvider({ children }) {
         'zeroFuelWeight', 'blockFuel', 'taxiFuel', 'alternateFuel', 'finalReserveFuel',
         'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 
         'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 
-        'climbFL', 'departureElev', 'departureQnh', 'arrivalQnh', 'arrivalElev', 'arrivalOat'
+        'climbFL', 'departureElev', 'departureQnh', 'arrivalQnh', 'arrivalElev', 'arrivalOat',
+        'pax', 'mac', 'averageWindDir', 'averageWindSpeed'
       ];
 
       if (numericKeys.includes(key)) {
-        updatedVal = ['fpa', 'manualMach', 'tripDistance', 'plannedFuelBurn', 'departureQnh', 'arrivalQnh'].includes(key) ? parseFloat(value) : parseInt(value, 10);
+        updatedVal = ['fpa', 'manualMach', 'tripDistance', 'plannedFuelBurn', 'departureQnh', 'arrivalQnh', 'mac'].includes(key) ? parseFloat(value) : parseInt(value, 10);
         if (isNaN(updatedVal)) return prev;
         
         if (min !== undefined && updatedVal < min) updatedVal = min;
@@ -361,7 +400,11 @@ export function MissionProvider({ children }) {
 
     setNavLog(prev => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [key]: parsed };
+      const extra = {};
+      if (key === 'plannedFuel') extra.isManualPlanned = true;
+      if (key === 'actualFuel') extra.isManualActual = true;
+
+      updated[index] = { ...updated[index], [key]: parsed, ...extra };
       
       if (['wind', 'fl', 'sat'].includes(key)) {
         const currentFl = key === 'fl' ? parsed : updated[index].fl;
