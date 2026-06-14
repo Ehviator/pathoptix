@@ -18,8 +18,8 @@ export default function FlightMap() {
   const [navLog, setNavLog] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [map, setMap] = useState(null);
   const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
 
@@ -72,33 +72,35 @@ export default function FlightMap() {
     if (navDb) parseFlightRoute();
   }, [navDb]);
 
-  // Leaflet Map Initialization Hook
+  // Leaflet Map Initialization Hook (waits until loading is done so mapContainerRef exists in DOM)
   useEffect(() => {
-    if (!mapRef.current && mapContainerRef.current) {
-      const map = L.map(mapContainerRef.current, {
+    if (loading) return;
+
+    let localMap = null;
+    if (!map && mapContainerRef.current) {
+      localMap = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false
       }).setView([44.5, -76.5], 6);
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
         attribution: '&copy; CartoDB'
-      }).addTo(map);
+      }).addTo(localMap);
 
-      mapRef.current = map;
+      setMap(localMap);
     }
 
     // Unmount cleanup
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      if (localMap) {
+        localMap.remove();
       }
+      setMap(null);
     };
-  }, []);
+  }, [loading, map]);
 
-  // Update map polyline paths and markers when coords / navLog updates
+  // Update map polyline paths and markers when map instance, coords, or navLog updates
   useEffect(() => {
-    const map = mapRef.current;
     if (!map) return;
 
     // Clear old polyline
@@ -146,7 +148,7 @@ export default function FlightMap() {
         console.error("Geospatial reframing exception:", e);
       }
     }
-  }, [activeCoords, navLog]);
+  }, [map, activeCoords, navLog]);
 
   const updateLogField = (index, key, value) => {
     let parsed = key === 'sat' || key === 'wind' ? parseInt(value, 10) : parseFloat(value);
