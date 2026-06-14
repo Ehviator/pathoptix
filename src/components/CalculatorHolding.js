@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { interpolate2D } from '../engine/interpolation.js';
 
 export default function CalculatorHolding() {
   const [inputs, setInputs] = useState({
-    weight: 105000, // lbs
-    altitude: 10000, // ft
-    holdDuration: 20, // minutes
-    remainingFuel: 8000 // lbs
+    weight: 105000, 
+    altitude: 5000, 
+    holdDuration: 20, 
+    remainingFuel: 8000,
+    iceState: 'OFF' // States: 'OFF', 'ON' (Anti-Ice), 'ACCRETION' (Structural Drag)
   });
+
+  const [holdingData, setHoldingData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/data/holding_endurance.json')
+      .then(res => res.json())
+      .then(data => {
+        setHoldingData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load holding database:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const adjustInput = (key, step, min, max) => {
     setInputs(prev => {
@@ -16,31 +34,69 @@ export default function CalculatorHolding() {
     });
   };
 
-  // Holding Fuel Flow calculation
-  const baseHoldingFF = 2850; // lbs/h
-  const weightFactor = (inputs.weight - 85000) * 0.0125;
-  const altFactor = (inputs.altitude / 1000) * 15;
-  
-  const fuelFlowPerHour = Math.round(baseHoldingFF + weightFactor + altFactor);
-  const fuelFlowPerMin = fuelFlowPerHour / 60;
+  let fuelFlowPerHour = 2900; // Baseline default fallback
+  let targetMatrixKey = 'anti_ice_off';
 
-  // Total fuel burned in the planned hold duration
+  if (inputs.iceState === 'ON') targetMatrixKey = 'anti_ice_on';
+  if (inputs.iceState === 'ACCRETION') targetMatrixKey = 'ice_accretion';
+
+  if (holdingData && holdingData.holding_fuel_matrix && holdingData.holding_fuel_matrix[targetMatrixKey]) {
+    const matrix = holdingData.holding_fuel_matrix[targetMatrixKey];
+    const interpResult = interpolate2D(
+      inputs.weight,
+      inputs.altitude,
+      matrix.weights,
+      matrix.altitudes,
+      matrix.data
+    );
+    if (interpResult !== null) {
+      fuelFlowPerHour = Math.round(interpResult);
+    }
+  }
+
+  const fuelFlowPerMin = fuelFlowPerHour / 60;
   const plannedHoldBurn = Math.round(fuelFlowPerMin * inputs.holdDuration);
 
-  // Maximum endurance estimation
+  // Reserve limit configuration parameters
   const reserveFuelLimit = 2500;
   const usableHoldingFuel = Math.max(0, inputs.remainingFuel - reserveFuelLimit);
-  const maxEnduranceMin = (usableHoldingFuel / fuelFlowPerHour) * 60;
+  const maxEnduranceMin = fuelFlowPerHour > 0 ? (usableHoldingFuel / fuelFlowPerHour) * 60 : 0;
   const maxEnduranceFormatted = `${Math.floor(maxEnduranceMin)} min`;
 
-  // Best holding speed (Green Dot speed)
-  const bestHoldingSpeed = Math.round(185 + (inputs.weight - 85000) * 0.0011 + (inputs.altitude / 1000) * 0.5);
+  // Best holding speed (Green Dot matching ice accretion structural drag profiles)
+  let baseGreenDot = 185 + (inputs.weight - 85000) * 0.0011 + (inputs.altitude / 1000) * 0.5;
+  if (inputs.iceState === 'ACCRETION') baseGreenDot += 28; // Airframe icing speed penalty boundary adjustment
+  const bestHoldingSpeed = Math.round(baseGreenDot);
+
+  if (loading) return <div className="panel-container"><p>Loading Endurance Database...</p></div>;
 
   return (
     <div className="panel-container">
       <div className="panel-header">
         <h2>Terminal Holding & Endurance Optimizer</h2>
-        <p>Dynamic calculations of fuel burn rates and maximum endurance limits during holding patterns.</p>
+        <div className="mode-toggle-bar">
+          <button 
+            type="button" 
+            className={`btn-toggle ${inputs.iceState === 'OFF' ? 'active' : ''}`}
+            onClick={() => setInputs(prev => ({ ...prev, iceState: 'OFF' }))}
+          >
+            Anti-Ice OFF
+          </button>
+          <button 
+            type="button" 
+            className={`btn-toggle ${inputs.iceState === 'ON' ? 'active' : ''}`}
+            onClick={() => setInputs(prev => ({ ...prev, iceState: 'ON' }))}
+          >
+            Anti-Ice ON (+10.1%)
+          </button>
+          <button 
+            type="button" 
+            className={`btn-toggle ${inputs.iceState === 'ACCRETION' ? 'active' : ''}`}
+            onClick={() => setInputs(prev => ({ ...prev, iceState: 'ACCRETION' }))}
+          >
+            Ice Accretion (+24.1%)
+          </button>
+        </div>
       </div>
 
       <div className="panel-body grid-2col">
@@ -59,9 +115,9 @@ export default function CalculatorHolding() {
           <div className="input-group-tactile">
             <label>Holding Altitude (ft)</label>
             <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('altitude', -1000, 2000, 25000)} className="btn-step">──</button>
+              <button type="button" onClick={() => adjustInput('altitude', -1000, 1500, 25000)} className="btn-step">──</button>
               <span className="value-display">{inputs.altitude.toLocaleString()} ft</span>
-              <button type="button" onClick={() => adjustInput('altitude', 1000, 2000, 25000)} className="btn-step">+</button>
+              <button type="button" onClick={() => adjustInput('altitude', 1000, 1500, 25000)} className="btn-step">+</button>
             </div>
           </div>
 
@@ -91,7 +147,7 @@ export default function CalculatorHolding() {
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Planned Hold Burn</span>
-              <span className="value">{plannedHoldBurn} lbs</span>
+              <span className="value">{plannedHoldBurn.toLocaleString()} lbs</span>
             </div>
             <div className="metric-box">
               <span className="label">Maximum Endurance</span>
@@ -110,11 +166,11 @@ export default function CalculatorHolding() {
             </div>
             <div className="table-row">
               <span>Best Endurance Speed (Green Dot)</span>
-              <span>{bestHoldingSpeed} kt IAS</span>
+              <span className="val highlight">{bestHoldingSpeed} kt IAS</span>
             </div>
             <div className="table-row">
               <span>Hourly Fuel Flow per Engine</span>
-              <span>{Math.round(fuelFlowPerHour / 2)} lbs/h</span>
+              <span>{Math.round(fuelFlowPerHour / 2).toLocaleString()} lbs/h</span>
             </div>
             <div className="table-row">
               <span>Protected Fuel Reserve</span>
