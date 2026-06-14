@@ -13,7 +13,7 @@ export default function CalculatorDescent() {
   const handleManualEntry = (key, value, min, max) => {
     let parsed = key === 'fpa' ? parseFloat(value) : parseInt(value, 10);
     if (isNaN(parsed)) return;
-    
+
     if (parsed < min) parsed = min;
     if (parsed > max) parsed = max;
 
@@ -21,23 +21,30 @@ export default function CalculatorDescent() {
   };
 
   const altDiff = (inputs.cruiseFL * 100) - inputs.targetAltitude;
+  
+  // Standard aerodynamic base profile line
   const baseTOD = (altDiff / 1000) * 3;
   const fpaFactor = 3.0 / inputs.fpa;
   const speedFactor = 1.0 + (inputs.descentSpeed - 270) * 0.0025;
-  const windCorrection = (inputs.windFactor * (altDiff / 1000) * 0.075);
+  
+  // High-wind correction with a logarithmic decay model
+  // Prevents unrealistic 600 NM TOD calculations in severe 200 kt tailwinds
+  const boundedWind = Math.max(-200, Math.min(200, inputs.windFactor));
+  const windSign = boundedWind >= 0 ? 1 : -1;
+  const windCorrection = windSign * Math.log10(1 + Math.abs(boundedWind) * 0.15) * (altDiff / 1000) * 1.65;
   
   const todDistance = Math.round(Math.max(10, (baseTOD * fpaFactor * speedFactor) + windCorrection));
   const averageTAS = 370;
-  const averageGS = Math.max(100, averageTAS + inputs.windFactor);
+  const averageGS = Math.max(100, averageTAS + boundedWind);
+  
   const timeMin = (todDistance / averageGS) * 60;
   const timeFormatted = `${Math.floor(timeMin)}:${Math.round((timeMin % 1) * 60).toString().padStart(2, '0')} min`;
 
   const vsi = Math.round(-1 * averageGS * 101.268 * Math.tan((inputs.fpa * Math.PI) / 180));
   const glideRatio = altDiff > 0 ? Math.round(((todDistance * 6076.1) / altDiff) * 10) / 10 : 0;
 
-  // Anti-Ice engine flight-idle high thrust correction scaling
   const baseFuelBurnRate = inputs.antiIce ? 3.4 : 3.0; 
-  const fuelFlowLbs = Math.round(todDistance * baseFuelBurnRate + (inputs.windFactor * 0.11));
+  const fuelFlowLbs = Math.round(todDistance * baseFuelBurnRate + (boundedWind * 0.11));
   const cabinRate = Math.round(-320 + (vsi + 1800) * 0.08);
 
   return (
@@ -52,9 +59,10 @@ export default function CalculatorDescent() {
 
           <div className="input-grid-spatial">
             <div className="input-cell-spatial">
-              <label>Cruise Flight Level (FL)</label>
+              <label>Cruise Level (FL)</label>
               <input 
                 type="number" 
+                key={`cruise-${inputs.cruiseFL}`}
                 defaultValue={inputs.cruiseFL}
                 onBlur={(e) => handleManualEntry('cruiseFL', e.target.value, 150, 410)}
                 className="touch-input-field"
@@ -65,6 +73,7 @@ export default function CalculatorDescent() {
               <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
+                key={`target-${inputs.targetAltitude}`}
                 defaultValue={inputs.targetAltitude}
                 onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 0, 15000)}
                 className="touch-input-field"
@@ -75,6 +84,7 @@ export default function CalculatorDescent() {
               <label>Descent Speed (KIAS)</label>
               <input 
                 type="number" 
+                key={`speed-${inputs.descentSpeed}`}
                 defaultValue={inputs.descentSpeed}
                 onBlur={(e) => handleManualEntry('descentSpeed', e.target.value, 240, 310)}
                 className="touch-input-field"
@@ -82,10 +92,11 @@ export default function CalculatorDescent() {
             </div>
 
             <div className="input-cell-spatial">
-              <label>Flight Path Angle (FPA)</label>
+              <label>Flight Path Angle (°)</label>
               <input 
                 type="number" 
                 step="0.1"
+                key={`fpa-${inputs.fpa}`}
                 defaultValue={inputs.fpa}
                 onBlur={(e) => handleManualEntry('fpa', e.target.value, 2.0, 4.0)}
                 className="touch-input-field"
@@ -93,9 +104,10 @@ export default function CalculatorDescent() {
             </div>
 
             <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
-              <label>Average Wind (kt)</label>
+              <label>Average Wind Vector (kt)</label>
               <input 
                 type="number" 
+                key={`windFactor-${inputs.windFactor}`}
                 defaultValue={inputs.windFactor}
                 onBlur={(e) => handleManualEntry('windFactor', e.target.value, -200, 200)}
                 className="touch-input-field"
@@ -134,7 +146,7 @@ export default function CalculatorDescent() {
 
           <div className="performance-table">
             <div className="table-row"><span>Required Glide Ratio</span><span className="val highlight">{glideRatio} : 1</span></div>
-            <div className="table-row"><span>Descent Fuel Burn</span><span>{fuelFlowLbs} lbs</span></div>
+            <div className="table-row"><span>Descent Fuel Burn</span><span>{fuelFlowLbs.toLocaleString()} lbs</span></div>
             <div className="table-row"><span>Cabin Vertical Velocity</span><span>{cabinRate} ft/min</span></div>
           </div>
         </div>

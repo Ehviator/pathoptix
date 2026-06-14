@@ -11,7 +11,7 @@ export default function CalculatorCruise() {
     isaDev: 0,
     costIndex: 15,
     manualMach: 0.78,
-    wind: 120, // Winter jet stream validation baseline
+    wind: 120, 
     antiIce: false
   });
 
@@ -31,11 +31,11 @@ export default function CalculatorCruise() {
       });
   }, []);
 
+  // Safe decimal and bounds verification loop
   const handleManualEntry = (key, value, min, max) => {
     let parsed = key === 'manualMach' ? parseFloat(value) : parseInt(value, 10);
     if (isNaN(parsed)) return;
     
-    // Smooth operational clamping limits execution
     if (parsed < min) parsed = min;
     if (parsed > max) parsed = max;
 
@@ -50,7 +50,6 @@ export default function CalculatorCruise() {
     }
   }, [inputs.weight, maxOperatingFL]);
 
-  // Secure wind bounds clamping between -200 and +200 kt
   const boundedWind = Math.max(-200, Math.min(200, inputs.wind));
   const correctedCI = getCorrectedCostIndex(inputs.costIndex, boundedWind);
   const weightLbs = inputs.weight;
@@ -132,6 +131,7 @@ export default function CalculatorCruise() {
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
+                key={`weight-${inputs.weight}`}
                 defaultValue={inputs.weight}
                 onBlur={(e) => handleManualEntry('weight', e.target.value, 85000, 130000)}
                 className="touch-input-field"
@@ -141,8 +141,8 @@ export default function CalculatorCruise() {
             <div className="input-cell-spatial">
               <label>Flight Level (FL)</label>
               <input 
-                key={inputs.flightLevel}
                 type="number" 
+                key={`fl-${inputs.flightLevel}`}
                 defaultValue={inputs.flightLevel}
                 onBlur={(e) => handleManualEntry('flightLevel', e.target.value, 280, maxOperatingFL)}
                 className="touch-input-field"
@@ -155,6 +155,7 @@ export default function CalculatorCruise() {
                   <label>Cost Index (CI)</label>
                   <input 
                     type="number" 
+                    key={`ci-${inputs.costIndex}`}
                     defaultValue={inputs.costIndex}
                     onBlur={(e) => handleManualEntry('costIndex', e.target.value, 0, 120)}
                     className="touch-input-field"
@@ -164,6 +165,7 @@ export default function CalculatorCruise() {
                   <label>Wind Velocity (kt)</label>
                   <input 
                     type="number" 
+                    key={`wind-${inputs.wind}`}
                     defaultValue={inputs.wind}
                     onBlur={(e) => handleManualEntry('wind', e.target.value, -200, 200)}
                     className="touch-input-field"
@@ -177,6 +179,7 @@ export default function CalculatorCruise() {
                   <input 
                     type="number" 
                     step="0.01"
+                    key={`mach-${inputs.manualMach}`}
                     defaultValue={inputs.manualMach}
                     onBlur={(e) => handleManualEntry('manualMach', e.target.value, 0.70, 0.82)}
                     className="touch-input-field"
@@ -186,6 +189,7 @@ export default function CalculatorCruise() {
                   <label>Wind Velocity (kt)</label>
                   <input 
                     type="number" 
+                    key={`wind-${inputs.wind}`}
                     defaultValue={inputs.wind}
                     onBlur={(e) => handleManualEntry('wind', e.target.value, -200, 200)}
                     className="touch-input-field"
@@ -198,6 +202,7 @@ export default function CalculatorCruise() {
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
+                key={`isa-${inputs.isaDev}`}
                 defaultValue={inputs.isaDev}
                 onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
                 className="touch-input-field"
@@ -219,7 +224,6 @@ export default function CalculatorCruise() {
 
         <div className="results-section glass-panel highlight-accent">
           <h3>Calculated Flight Deck Targets</h3>
-
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Target Profile Speed</span>
@@ -242,16 +246,6 @@ export default function CalculatorCruise() {
             <div className="table-row"><span>True Airspeed (TAS)</span><span>{tas} kt</span></div>
             <div className="table-row"><span>Ground Speed (GS)</span><span>{gs} kt</span></div>
             <div className="table-row"><span>Max Operating Altitude</span><span>FL {maxOperatingFL}</span></div>
-          </div>
-
-          <div className="alert-banner info">
-            {isOutOfEnvelope ? (
-              <span><strong>WARNING:</strong> Aerodynamic buffer parameters breached. Descend immediately to preserve safe maneuver margins.</span>
-            ) : boundedWind <= -100 ? (
-              <span><strong>Severe Winter Stream Active:</strong> Adjusted Cost Index profile configured for {Math.abs(boundedWind)} kt headwind penetration vectors.</span>
-            ) : (
-              <span><strong>Optimizer Recommendation:</strong> Vertically profile target active. Fleet matrix calculations verified operational.</span>
-            )}
           </div>
         </div>
       </div>
