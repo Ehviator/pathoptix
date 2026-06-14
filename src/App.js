@@ -3,6 +3,7 @@ import CalculatorClimb from './components/CalculatorClimb';
 import CalculatorCruise from './components/CalculatorCruise';
 import CalculatorDescent from './components/CalculatorDescent';
 import FlightMap from './components/FlightMap';
+import 'leaflet/dist/leaflet.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('cruise');

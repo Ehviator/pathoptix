@@ -7,9 +7,9 @@ import WaypointLog from './WaypointLog';
 // Fix generic Leaflet marker icon asset mapping bugs inside single-page applications
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconRetinaUrl: '/images/marker-icon-2x.png',
+  iconUrl: '/images/marker-icon.png',
+  shadowUrl: '/images/marker-shadow.png',
 });
 
 // Custom component to dynamically re-center map view tracking frames when the route profile updates
@@ -17,8 +17,21 @@ function MapRefocus({ coords }) {
   const map = useMap();
   useEffect(() => {
     if (coords && coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [50, 50] });
+      try {
+        const bounds = L.latLngBounds(coords);
+        if (bounds.isValid()) {
+          // Delay execution to ensure browser has resolved element layout sizes
+          const timer = setTimeout(() => {
+            map.invalidateSize();
+            if (map.getSize().x > 0) {
+              map.fitBounds(bounds, { padding: [50, 50] });
+            }
+          }, 100);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {
+        console.error("Map refocus layout safety fault:", e);
+      }
     }
   }, [coords, map]);
   return null;
