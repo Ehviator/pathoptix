@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getLegalMaxAltitude } from '../engine/interpolation.js';
-import { calculateDistanceNM, estimateTAS, calculateTrackAngle } from '../engine/kinematics.js';
+import { calculateDistanceNM, calculateTrackAngle } from '../engine/kinematics.js';
+import { getTASFromMach } from '../engine/atmospheric.js';
 import { fetchAirportWeather } from '../services/awcApi.js';
 import { enrichAirport } from '../services/airportService.js';
+import { useDatabase } from './DatabaseContext.js';
+
+// Minimum characters for a valid ICAO airport code (3 = VFR, 4 = IFR standard)
+const isValidAirportCode = (code) => /^[A-Z]{3,4}$/.test(code?.trim() ?? '');
 
 const MissionContext = createContext(null);
 
@@ -163,7 +168,7 @@ export const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL,
       const plannedFuel = pdfWp ? pdfWp.plannedFuel : (existing.isManualPlanned ? existing.plannedFuel : calculatedFuel);
       const actualFuel = pdfWp ? pdfWp.actualFuel : (existing.isManualActual ? existing.actualFuel : calculatedFuel);
 
-      const currentTAS = estimateTAS(fl, sat);
+      const currentTAS = Math.round(getTASFromMach(0.78, sat));
       newLog.push({
         ...existing,
         legDistance: legDist,
@@ -184,7 +189,7 @@ export const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL,
       const plannedFuel = pdfWp ? pdfWp.plannedFuel : calculatedFuel;
       const actualFuel = pdfWp ? pdfWp.actualFuel : calculatedFuel;
 
-      const initialTAS = estimateTAS(fl, sat);
+      const initialTAS = Math.round(getTASFromMach(0.78, sat));
       newLog.push({
         ident,
         type: fix.type,
@@ -207,6 +212,15 @@ export const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL,
 };
 
 export function MissionProvider({ children }) {
+  // All databases come from DatabaseContext — stable references that never
+  // change after initial load, so MissionContext state changes do not
+  // cascade re-renders into database-consuming components.
+  const {
+    navDb, cruiseMatrix, climbPerf, descentPerf,
+    airwaysDb, driftdownDb, terrainDb, airportDb,
+    loading,
+  } = useDatabase();
+
   const [mission, setMission] = useState({
     departure: '',
     arrival: '',
@@ -246,14 +260,6 @@ export function MissionProvider({ children }) {
     plannedEte: ''
   });
 
-  const [navDb, setNavDb] = useState(null);
-  const [cruiseMatrix, setCruiseMatrix] = useState(null);
-  const [climbPerf, setClimbPerf] = useState(null);
-  const [descentPerf, setDescentPerf] = useState(null);
-  const [airwaysDb, setAirwaysDb] = useState(null);
-  const [driftdownDb, setDriftdownDb] = useState(null);
-  const [terrainDb, setTerrainDb] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [unresolvedElements, setUnresolvedElements] = useState([]);
 
   // Global Flight Log and Distance States
@@ -267,45 +273,7 @@ export function MissionProvider({ children }) {
     alternate: null
   });
 
-  // Parallel asynchronous database initialization
-  useEffect(() => {
-    Promise.all([
-      fetch('/data/nav_db.json').then(res => res.json()),
-      fetch('/data/cruise_econ.json').then(res => res.json()),
-      fetch('/data/climb_perf.json').then(res => res.json()),
-      fetch('/data/descent_fpa.json').then(res => res.json()),
-      fetch('/data/airways_db.json').then(res => res.json()),
-      fetch('/data/driftdown_oei.json').then(res => res.json()),
-      fetch('/data/terrain_db.json').then(res => res.json())
-    ])
-    .then(([navs, cruise, climb, descent, airways, driftdown, terrain]) => {
-      setNavDb(navs);
-      setCruiseMatrix(cruise);
-      setClimbPerf(climb);
-      setDescentPerf(descent);
-      setAirwaysDb(airways);
-      setDriftdownDb(driftdown);
-      setTerrainDb(terrain);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error("Critical fault syncing core databases:", err);
-      setLoading(false);
-    });
-  }, []);
-
-  // Load airport database asynchronously
-  const [airportDb, setAirportDb] = useState(null);
-  useEffect(() => {
-    fetch('/data/airport_db.json')
-      .then(res => res.json())
-      .then(data => {
-        setAirportDb(data);
-      })
-      .catch(err => {
-        console.error("Warning: Failed to load airport database:", err);
-      });
-  }, []);
+  // Databases are loaded by DatabaseContext — no fetch logic here.
 
   // Auto-populate field elevations from local airportDb
   useEffect(() => {
@@ -364,15 +332,20 @@ export function MissionProvider({ children }) {
       setTotalDistance(newDistance);
       setUnresolvedElements(unresolved || []);
 
-      // Auto-extract departure and arrival from routeString
+      // Auto-extract departure and arrival from routeString.
+      // Guard: only update when the extracted token looks like a real airport
+      // code (3-4 uppercase letters). Without this guard, every keypress
+      // triggers a departure/arrival state change, which cascades into a
+      // weather fetch for each partial token typed (e.g. "C", "CY", "CYO").
       const elements = mission.routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
       if (elements.length >= 2) {
         const dep = elements[0];
         const arr = elements[elements.length - 1];
         setMission(prev => {
-          if (prev.departure !== dep || prev.arrival !== arr) {
-            return { ...prev, departure: dep, arrival: arr };
-          }
+          const updates = {};
+          if (isValidAirportCode(dep) && prev.departure !== dep) updates.departure = dep;
+          if (isValidAirportCode(arr) && prev.arrival !== arr)   updates.arrival   = arr;
+          if (Object.keys(updates).length > 0) return { ...prev, ...updates };
           return prev;
         });
       }
@@ -603,7 +576,7 @@ export function MissionProvider({ children }) {
         const currentSat = key === 'sat' ? parsed : updated[index].sat;
         const currentWind = key === 'wind' ? parsed : updated[index].wind;
         
-        const newTAS = estimateTAS(currentFl, currentSat);
+        const newTAS = Math.round(getTASFromMach(0.78, currentSat));
         updated[index].tas = newTAS;
         updated[index].gs = Math.max(100, newTAS + currentWind);
       }
