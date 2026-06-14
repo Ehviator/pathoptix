@@ -1,1 +1,14 @@
-{}
+{
+  "aircraft_variant": "E195-E2",
+  "engine": "PW1922G-A",
+  "weights": [85000, 100000, 118000, 136000],
+  "isa_headers": [-15, 0, 15],
+  "single_engine_ceilings": [
+    [25000, 24000, 22000],
+    [23000, 22000, 20000],
+    [21000, 20000, 18000],
+    [19000, 18000, 16000]
+  ],
+  "driftdown_fuel_flow_pph": 3600,
+  "driftdown_ias_kt": 230
+}

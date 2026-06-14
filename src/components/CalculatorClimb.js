@@ -16,7 +16,9 @@ export default function CalculatorClimb() {
     windBelow180: 0, // Wind component < FL180
     windAbove180: 20, // Wind component > FL180
     antiIce: false,
-    atcSpeedRestriction: true // 250kt below 10,000 ft limit
+    atcSpeedRestriction: true, // 250kt below 10,000 ft limit
+    compareIas: 270,
+    compareMach: 0.74
   });
 
   // Automatically sync with global mission context updates (weather ingestion & weights)
@@ -32,7 +34,7 @@ export default function CalculatorClimb() {
   }, [mission.weight, mission.isaDev, mission.departureElev, mission.departureQnh, mission.cruiseFL]);
 
   const handleManualEntry = (key, value, min, max) => {
-    let parsed = key === 'qnh' ? parseFloat(value) : parseInt(value, 10);
+    let parsed = ['qnh', 'compareMach'].includes(key) ? parseFloat(value) : parseInt(value, 10);
     if (isNaN(parsed)) return;
     
     if (parsed < min) parsed = min;
@@ -133,6 +135,14 @@ export default function CalculatorClimb() {
   let isOutOfEnvelope = false;
   let totalWindDisplacement = 0;
 
+  // Alternate profile variables
+  let altTimeToClimb = 0;
+  let altFuelBurned = 0;
+  let altClimbDistance = 0;
+  let timeDelta = 0;
+  let fuelDelta = 0;
+  let distDelta = 0;
+
   const perfTarget = getClimbPerfForAlt(trueTargetAlt, inputs.climbWeight, inputs.isaDev);
   const perfField = getClimbPerfForAlt(trueFieldAlt, inputs.climbWeight, inputs.isaDev);
 
@@ -158,6 +168,47 @@ export default function CalculatorClimb() {
     totalWindDisplacement = windEffectBelow + windEffectAbove;
 
     climbDistance = Math.max(5, Math.round(rawDist + totalWindDisplacement));
+
+    // Alternate Speed calculations (comparing custom IAS/Mach against standard 290/.76)
+    const altIas = inputs.compareIas !== undefined ? inputs.compareIas : 290;
+    const altMach = inputs.compareMach !== undefined ? inputs.compareMach : 0.76;
+
+    const iasRatio = altIas / 290;
+
+    // Slower speeds take slightly more time, but faster speeds take significantly more time due to drag & lower ROC
+    const vDiff = altIas - 290;
+    const timeMultIas = vDiff >= 0
+      ? 1.0 + 0.6 * (vDiff / 290) + 2.0 * Math.pow(vDiff / 290, 2)
+      : 1.0 + 0.25 * Math.abs(vDiff / 290);
+
+    const mDiff = altMach - 0.76;
+    const timeMultMach = mDiff >= 0
+      ? 1.0 + 0.6 * (mDiff / 0.76) + 2.0 * Math.pow(mDiff / 0.76, 2)
+      : 1.0 + 0.25 * Math.abs(mDiff / 0.76);
+
+    const timeMult = 0.8 * timeMultIas + 0.2 * timeMultMach;
+
+    // Fuel flow scales exponentially (V^2.2) due to aerodynamic drag
+    const ffMultIas = Math.pow(altIas / 290, 2.2);
+    const ffMachRatio = altMach / 0.76;
+    const ffMultMach = Math.pow(ffMachRatio, 2.2);
+    const ffMult = 0.8 * ffMultIas + 0.2 * ffMultMach;
+
+    altTimeToClimb = Math.max(1, Math.round(timeToClimb * timeMult));
+    altFuelBurned = Math.round(fuelBurned * timeMult * ffMult);
+
+    const altDistStillAir = rawDist * iasRatio * timeMult;
+    const altTimeBelow180 = Math.min(altTimeToClimb, 10);
+    const altTimeAbove180 = Math.max(0, altTimeToClimb - 10);
+    const altWindEffectBelow = (inputs.windBelow180 * (altTimeBelow180 / 60));
+    const altWindEffectAbove = (inputs.windAbove180 * (altTimeAbove180 / 60));
+    const altTotalWindDisplacement = altWindEffectBelow + altWindEffectAbove;
+
+    altClimbDistance = Math.max(5, Math.round(altDistStillAir + altTotalWindDisplacement));
+
+    timeDelta = altTimeToClimb - timeToClimb;
+    fuelDelta = altFuelBurned - fuelBurned;
+    distDelta = altClimbDistance - climbDistance;
   }
 
   const averageROC = timeToClimb > 0 && !isOutOfEnvelope ? Math.round(effectiveClimbAlt / timeToClimb) : 0;
@@ -265,6 +316,32 @@ export default function CalculatorClimb() {
               </div>
             </div>
 
+            <h3 style={{ marginTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '16px' }}>Climb Speed Comparison (MCDU Override)</h3>
+            <div className="input-grid-spatial" style={{ marginTop: '12px' }}>
+              <div className="input-cell-spatial">
+                <label>Compare Target IAS (kt)</label>
+                <input 
+                  type="number" 
+                  key={inputs.compareIas}
+                  defaultValue={inputs.compareIas}
+                  onBlur={(e) => handleManualEntry('compareIas', e.target.value, 250, 320)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Compare Target Mach</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  key={inputs.compareMach}
+                  defaultValue={inputs.compareMach}
+                  onBlur={(e) => handleManualEntry('compareMach', e.target.value, 0.70, 0.80)}
+                  className="touch-input-field"
+                />
+              </div>
+            </div>
+
             {/* Configuration Toggles */}
             <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="input-group-toggle">
@@ -311,9 +388,32 @@ export default function CalculatorClimb() {
             <div className="performance-table">
               <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
               <div className="table-row"><span>Initial Speed Schedule</span><span>{baseClimbSpeedIAS} kt</span></div>
-              <div className="table-row"><span>Target Mach Transition</span><span>M 0.78</span></div>
+              <div className="table-row"><span>Target Mach Transition</span><span>M 0.76</span></div>
               <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{isOutOfEnvelope ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
               <div className="table-row"><span>Effective Pressure Altitude</span><span>{effectiveClimbAlt.toLocaleString()} ft</span></div>
+            </div>
+
+            <h3 style={{ marginTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '16px' }}>Speed Profile Comparison</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '12px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '8px', padding: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Baseline Profile</h4>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>290 kt / M 0.76</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                  <div>Time: <strong>{isOutOfEnvelope ? "---" : `${timeToClimb} min`}</strong></div>
+                  <div>Fuel: <strong>{isOutOfEnvelope ? "---" : `${fuelBurned.toLocaleString()} lbs`}</strong></div>
+                  <div>Dist: <strong>{isOutOfEnvelope ? "---" : `${climbDistance} NM`}</strong></div>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(5, 11, 20, 0.4)', border: '1px solid var(--accent-cyan)', borderRadius: '8px', padding: '12px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--accent-cyan)' }}>Alternate Speed</h4>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--accent-cyan)', marginBottom: '8px' }}>{inputs.compareIas} kt / M {inputs.compareMach.toFixed(2)}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                  <div>Time: <strong>{isOutOfEnvelope ? "---" : `${altTimeToClimb} min`}</strong> <span style={{ color: timeDelta < 0 ? 'var(--accent-green)' : timeDelta > 0 ? 'var(--accent-crit)' : 'var(--text-secondary)' }}>({timeDelta >= 0 ? `+${timeDelta}` : timeDelta} min)</span></div>
+                  <div>Fuel: <strong>{isOutOfEnvelope ? "---" : `${altFuelBurned.toLocaleString()} lbs`}</strong> <span style={{ color: fuelDelta < 0 ? 'var(--accent-green)' : fuelDelta > 0 ? 'var(--accent-crit)' : 'var(--text-secondary)' }}>({fuelDelta >= 0 ? `+${fuelDelta.toLocaleString()}` : fuelDelta.toLocaleString()} lbs)</span></div>
+                  <div>Dist: <strong>{isOutOfEnvelope ? "---" : `${altClimbDistance} NM`}</strong> <span style={{ color: 'var(--text-secondary)' }}>({distDelta >= 0 ? `+${distDelta}` : distDelta} NM)</span></div>
+                </div>
+              </div>
             </div>
 
             <div className="alert-banner info" style={{ marginTop: '24px' }}>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathoptix-v6';
+const CACHE_NAME = 'pathoptix-v9';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   '/data/holding_endurance.json',
   '/data/driftdown_oei.json',
   '/data/airways_db.json',
+  '/pdf.worker.min.js',
   '/images/marker-icon.png',
   '/images/marker-icon-2x.png',
   '/images/marker-shadow.png'
@@ -40,6 +41,27 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event: Cache-First Strategy with Network Fallback & Vite Dev Server Bypass
 self.addEventListener('fetch', (event) => {
+  // Handle shared file targets (PWA Web Share Target API)
+  if (event.request.method === 'POST' && event.request.url.includes('/share-target')) {
+    event.respondWith(
+      (async () => {
+        try {
+          const formData = await event.request.formData();
+          const pdfFile = formData.get('flight_plan');
+          if (pdfFile) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put('/shared-pdf.pdf', new Response(pdfFile));
+            return Response.redirect('/?shared-flight-plan=1', 303);
+          }
+        } catch (e) {
+          console.error("Service worker failed to parse shared target payload:", e);
+        }
+        return Response.redirect('/', 303);
+      })()
+    );
+    return;
+  }
+
   // Bypass service worker cache for Vite dev server files to prevent stale local source copies
   if (
     event.request.url.includes('/src/') ||

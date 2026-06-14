@@ -3,8 +3,15 @@
  */
 export function interpolate1D(x, x0, x1, y0, y1) {
   if (y0 === null || y1 === null || y0 === "--" || y1 === "--") return null;
-  if (x0 === x1) return y0;
-  return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0);
+  
+  const safeX = typeof x === 'number' && !isNaN(x) ? x : 0;
+  const safeX0 = typeof x0 === 'number' && !isNaN(x0) ? x0 : 0;
+  const safeX1 = typeof x1 === 'number' && !isNaN(x1) ? x1 : 0;
+  const safeY0 = typeof y0 === 'number' && !isNaN(y0) ? y0 : 0;
+  const safeY1 = typeof y1 === 'number' && !isNaN(y1) ? y1 : 0;
+
+  if (Math.abs(safeX1 - safeX0) < 1e-9) return safeY0;
+  return safeY0 + ((safeX - safeX0) * (safeY1 - safeY0)) / (safeX1 - safeX0);
 }
 
 /**
@@ -12,9 +19,20 @@ export function interpolate1D(x, x0, x1, y0, y1) {
  * Prevents extrapolation into illegal aerodynamic envelopes.
  */
 export function interpolate2D(targetRow, targetCol, rowHeaders, colHeaders, dataMatrix) {
+  // Guard against missing, empty or mismatched databases
+  if (
+    !Array.isArray(rowHeaders) || rowHeaders.length === 0 ||
+    !Array.isArray(colHeaders) || colHeaders.length === 0 ||
+    !Array.isArray(dataMatrix) || dataMatrix.length === 0
+  ) {
+    return null;
+  }
+
   // 1. Enforce strict upper and lower boundary clamping for rows
   let r0 = 0, r1 = 0;
-  if (targetRow <= rowHeaders[0]) {
+  if (rowHeaders.length === 1) {
+    r0 = r1 = 0;
+  } else if (targetRow <= rowHeaders[0]) {
     r0 = r1 = 0;
   } else if (targetRow >= rowHeaders[rowHeaders.length - 1]) {
     r0 = r1 = rowHeaders.length - 1;
@@ -30,7 +48,9 @@ export function interpolate2D(targetRow, targetCol, rowHeaders, colHeaders, data
 
   // 2. Enforce strict upper and lower boundary clamping for columns
   let c0 = 0, c1 = 0;
-  if (targetCol <= colHeaders[0]) {
+  if (colHeaders.length === 1) {
+    c0 = c1 = 0;
+  } else if (targetCol <= colHeaders[0]) {
     c0 = c1 = 0;
   } else if (targetCol >= colHeaders[colHeaders.length - 1]) {
     c0 = c1 = colHeaders.length - 1;
@@ -44,25 +64,31 @@ export function interpolate2D(targetRow, targetCol, rowHeaders, colHeaders, data
     }
   }
 
-  // 3. Extract the four bounding coordinates
+  // 3. Verify data matrix row structure exists before access
+  if (!dataMatrix[r0] || !dataMatrix[r1]) {
+    return null;
+  }
+
+  // 4. Extract the four bounding coordinates
   const q00 = dataMatrix[r0][c0];
   const q01 = dataMatrix[r0][c1];
   const q10 = dataMatrix[r1][c0];
   const q11 = dataMatrix[r1][c1];
 
-  // 4. Structural Verification: If any bounding node is non-existent, return null (Invalid Flight State)
+  // 5. Structural Verification: If any bounding node is non-existent, return null (Invalid Flight State)
   if (
     q00 === "--" || q01 === "--" || q10 === "--" || q11 === "--" ||
-    q00 === null || q01 === null || q10 === null || q11 === null
+    q00 === null || q01 === null || q10 === null || q11 === null ||
+    q00 === undefined || q01 === undefined || q10 === undefined || q11 === undefined
   ) {
     return null;
   }
 
-  // 5. Execute internal column interpolations
+  // 6. Execute internal column interpolations
   const r0_interp = interpolate1D(targetCol, colHeaders[c0], colHeaders[c1], q00, q01);
   const r1_interp = interpolate1D(targetCol, colHeaders[c0], colHeaders[c1], q10, q11);
 
-  // 6. Resolve final intersection value
+  // 7. Resolve final intersection value
   return interpolate1D(targetRow, rowHeaders[r0], rowHeaders[r1], r0_interp, r1_interp);
 }
 

@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import Dashboard from './components/Dashboard';
-import CalculatorClimb from './components/CalculatorClimb';
-import CalculatorCruise from './components/CalculatorCruise';
-import CalculatorDescent from './components/CalculatorDescent';
-import FlightMap from './components/FlightMap';
+import CreateFlight from './components/CreateFlight';
+import ReviewRoute from './components/ReviewRoute';
+import ReviewFuel from './components/ReviewFuel';
+import ReviewPerformance from './components/ReviewPerformance';
+import ReviewOptimization from './components/ReviewOptimization';
+import ReviewWeather from './components/ReviewWeather';
+import ReviewOei from './components/ReviewOei';
+import BriefFlight from './components/BriefFlight';
+import ErrorBoundary from './components/ErrorBoundary';
 import 'leaflet/dist/leaflet.css';
 
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('create-flight');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -25,18 +30,60 @@ export default function App() {
 
   const renderActiveComponent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'climb':
-        return <CalculatorClimb />;
-      case 'cruise':
-        return <CalculatorCruise />;
-      case 'descent':
-        return <CalculatorDescent />;
-      case 'map':
-        return <FlightMap />;
+      case 'create-flight':
+        return (
+          <ErrorBoundary name="Create Flight">
+            <CreateFlight />
+          </ErrorBoundary>
+        );
+      case 'review-route':
+        return (
+          <ErrorBoundary name="Review Route">
+            <ReviewRoute />
+          </ErrorBoundary>
+        );
+      case 'review-fuel':
+        return (
+          <ErrorBoundary name="Review Fuel">
+            <ReviewFuel />
+          </ErrorBoundary>
+        );
+      case 'review-performance':
+        return (
+          <ErrorBoundary name="Review Performance">
+            <ReviewPerformance />
+          </ErrorBoundary>
+        );
+      case 'review-optimization':
+        return (
+          <ErrorBoundary name="Fuel Optimization">
+            <ReviewOptimization />
+          </ErrorBoundary>
+        );
+      case 'review-weather':
+        return (
+          <ErrorBoundary name="Review Weather">
+            <ReviewWeather />
+          </ErrorBoundary>
+        );
+      case 'review-oei':
+        return (
+          <ErrorBoundary name="Review OEI">
+            <ReviewOei />
+          </ErrorBoundary>
+        );
+      case 'brief-flight':
+        return (
+          <ErrorBoundary name="Brief Flight">
+            <BriefFlight />
+          </ErrorBoundary>
+        );
       default:
-        return <Dashboard />;
+        return (
+          <ErrorBoundary name="Create Flight">
+            <CreateFlight />
+          </ErrorBoundary>
+        );
     }
   };
 
@@ -62,34 +109,52 @@ export default function App() {
       <main className="app-content">
         <nav className="nav-tabs body-nav-tier">
           <button 
-            className={`nav-tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
+            className={`nav-tab-btn ${activeTab === 'create-flight' ? 'active' : ''}`}
+            onClick={() => setActiveTab('create-flight')}
           >
-            📊 Operations Dashboard
+            📋 Create Flight
           </button>
           <button 
-            className={`nav-tab-btn ${activeTab === 'climb' ? 'active' : ''}`}
-            onClick={() => setActiveTab('climb')}
+            className={`nav-tab-btn ${activeTab === 'review-route' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-route')}
           >
-            🛫 Climb
+            🗺️ Review Route
           </button>
           <button 
-            className={`nav-tab-btn ${activeTab === 'cruise' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cruise')}
+            className={`nav-tab-btn ${activeTab === 'review-fuel' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-fuel')}
           >
-            🚀 Cruise Econ
+            ⛽ Review Fuel
           </button>
           <button 
-            className={`nav-tab-btn ${activeTab === 'descent' ? 'active' : ''}`}
-            onClick={() => setActiveTab('descent')}
+            className={`nav-tab-btn ${activeTab === 'review-performance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-performance')}
           >
-            📉 Descent FPA
+            ⚡ Review Performance
           </button>
           <button 
-            className={`nav-tab-btn ${activeTab === 'map' ? 'active' : ''}`}
-            onClick={() => setActiveTab('map')}
+            className={`nav-tab-btn ${activeTab === 'review-optimization' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-optimization')}
           >
-            🗺️ Flight Map & Navlog
+            📊 Optimize Fuel
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'review-weather' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-weather')}
+          >
+            🌦️ Review Weather
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'review-oei' ? 'active' : ''}`}
+            onClick={() => setActiveTab('review-oei')}
+          >
+            ⚠️ Review OEI
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'brief-flight' ? 'active' : ''}`}
+            onClick={() => setActiveTab('brief-flight')}
+          >
+            🏁 Brief Flight
           </button>
         </nav>
 

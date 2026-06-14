@@ -11,7 +11,6 @@ export default function CalculatorCruise() {
   const [localState, setLocalState] = useState({
     speedMode: 'ECON', // 'ECON' or 'MANUAL'
     manualMach: 0.78,
-    cgMac: 22.5, // Center of Gravity % Mean Aerodynamic Chord
     dragPenalty: 0.0 // MEL/CDL flat drag percentage increase
   });
 
@@ -76,8 +75,8 @@ export default function CalculatorCruise() {
   let fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
   
   // Structural & Aerodynamic Modifiers
-  // Aft CG (>25% MAC) reduces trim drag. Fwd CG (<20% MAC) increases trim drag.
-  const cgModifier = localState.cgMac > 28 ? -0.015 : localState.cgMac < 20 ? 0.015 : 0; 
+  const cgMac = mission.mac !== '' && mission.mac !== undefined && mission.mac !== null ? mission.mac : 22.5;
+  const cgModifier = cgMac > 28 ? -0.015 : cgMac < 20 ? 0.015 : 0; 
   const cdlModifier = localState.dragPenalty / 100;
   
   fuelFlowKg = fuelFlowKg * (1 + cgModifier + cdlModifier);
@@ -160,6 +159,7 @@ export default function CalculatorCruise() {
               <div className="input-cell-spatial">
                 <label>Cost Index (CI)</label>
                 <input 
+                  key={`ci-${mission.costIndex}`}
                   type="number" 
                   defaultValue={mission.costIndex}
                   onBlur={(e) => updateMissionField('costIndex', e.target.value)}
@@ -170,6 +170,7 @@ export default function CalculatorCruise() {
               <div className="input-cell-spatial">
                 <label>Target Mach</label>
                 <input 
+                  key={`mach-${localState.manualMach}`}
                   type="number" 
                   step="0.01"
                   defaultValue={localState.manualMach}
@@ -194,8 +195,9 @@ export default function CalculatorCruise() {
               <input 
                 type="number" 
                 step="0.1"
-                defaultValue={localState.cgMac}
-                onBlur={(e) => handleLocalEntry('cgMac', e.target.value, 10, 40)}
+                key={mission.mac}
+                defaultValue={mission.mac !== '' && mission.mac !== undefined && mission.mac !== null ? mission.mac : 22.5}
+                onBlur={(e) => updateMissionField('mac', e.target.value, 10, 40)}
                 className="touch-input-field"
               />
             </div>

@@ -15,7 +15,8 @@ const TROPOPAUSE_TEMP_K = 216.65; // -56.5°C
  * Converts altitude from feet to meters
  */
 export function ftToM(feet) {
-  return feet * 0.3048;
+  const safeFeet = typeof feet === 'number' && !isNaN(feet) ? feet : 0;
+  return safeFeet * 0.3048;
 }
 
 /**
@@ -24,8 +25,11 @@ export function ftToM(feet) {
  * @returns {number} Standard Temperature in °C
  */
 export function getISATemperature(altFt) {
-  if (altFt <= TROPOPAUSE_ALT_FT) {
-    return 15.0 - (1.98 * altFt) / 1000;
+  let safeAlt = typeof altFt === 'number' && !isNaN(altFt) ? altFt : 0;
+  if (safeAlt < 0) safeAlt = 0;
+  if (safeAlt > 50000) safeAlt = 50000;
+  if (safeAlt <= TROPOPAUSE_ALT_FT) {
+    return 15.0 - (1.98 * safeAlt) / 1000;
   }
   return -56.5;
 }
@@ -36,7 +40,10 @@ export function getISATemperature(altFt) {
  * @returns {number} Standard Pressure in hPa
  */
 export function getISAPressure(altFt) {
-  const altM = ftToM(altFt);
+  let safeAlt = typeof altFt === 'number' && !isNaN(altFt) ? altFt : 0;
+  if (safeAlt < 0) safeAlt = 0;
+  if (safeAlt > 50000) safeAlt = 50000;
+  const altM = ftToM(safeAlt);
   if (altM <= 11000) {
     // Troposphere equation
     const tempK = SEA_LEVEL_TEMP_K - TEMP_LAPSE_RATE * altM;
@@ -55,7 +62,9 @@ export function getISAPressure(altFt) {
  * @returns {number} Speed of sound in knots
  */
 export function getSpeedOfSound(tempC) {
-  const tempK = tempC + 273.15;
+  let safeTemp = typeof tempC === 'number' && !isNaN(tempC) ? tempC : 15;
+  if (safeTemp < -273.15) safeTemp = -273.15; // Clamped to absolute zero
+  const tempK = safeTemp + 273.15;
   const speedOfSoundMps = Math.sqrt(1.4 * GAS_CONSTANT * tempK);
   return speedOfSoundMps * 1.94384; // Convert m/s to knots
 }
@@ -67,8 +76,9 @@ export function getSpeedOfSound(tempC) {
  * @returns {number} True Airspeed in knots
  */
 export function getTASFromMach(mach, tempC) {
+  const safeMach = typeof mach === 'number' && !isNaN(mach) ? mach : 0;
   const speedOfSound = getSpeedOfSound(tempC);
-  return mach * speedOfSound;
+  return safeMach * speedOfSound;
 }
 
 /**
@@ -83,14 +93,21 @@ export function getTASFromMach(mach, tempC) {
  * @returns {number} Corrected indicated altitude in feet
  */
 export function calculateColdTempCorrection(targetAltitude, fieldElevation, destinationOAT) {
-  if (destinationOAT > 0) {
-    return targetAltitude;
+  const safeTarget = typeof targetAltitude === 'number' && !isNaN(targetAltitude) ? targetAltitude : 0;
+  const safeField = typeof fieldElevation === 'number' && !isNaN(fieldElevation) ? fieldElevation : 0;
+  let safeOAT = typeof destinationOAT === 'number' && !isNaN(destinationOAT) ? destinationOAT : 15;
+
+  if (safeOAT <= -273.0) safeOAT = -272.9; // Prevents division by zero in (273.15 + safeOAT)
+  if (safeOAT > 50) safeOAT = 50;
+
+  if (safeOAT > 0) {
+    return safeTarget;
   }
-  const height = targetAltitude - fieldElevation;
-  if (height <= 0) return targetAltitude;
-  
+  const height = safeTarget - safeField;
+  if (height <= 0) return safeTarget;
+
   // Standard ICAO correction formula
-  const correction = height * ((15 - destinationOAT) / (273.15 + destinationOAT - 0.5 * 0.00198 * height));
-  return Math.round(targetAltitude + correction);
+  const correction = height * ((15 - safeOAT) / (273.15 + safeOAT - 0.5 * 0.00198 * height));
+  return Math.round(safeTarget + correction);
 }
 

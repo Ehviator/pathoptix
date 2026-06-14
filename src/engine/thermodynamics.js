@@ -14,11 +14,18 @@
  * @returns {number} True pressure altitude in feet
  */
 export function calculateTruePressureAlt(targetAlt, qnh) {
-  if (targetAlt >= 18000) {
-    return targetAlt;
+  const safeAlt = typeof targetAlt === 'number' && !isNaN(targetAlt) ? targetAlt : 0;
+  let safeQnh = typeof qnh === 'number' && !isNaN(qnh) ? qnh : 29.92;
+
+  // QNH limits (clamped within physical limits to prevent extreme pressure calculations)
+  if (safeQnh < 25.0) safeQnh = 25.0;
+  if (safeQnh > 32.5) safeQnh = 32.5;
+
+  if (safeAlt >= 18000) {
+    return safeAlt;
   }
-  const offset = Math.round((29.92 - qnh) * 1000);
-  return Math.max(0, targetAlt + offset);
+  const offset = Math.round((29.92 - safeQnh) * 1000);
+  return Math.max(0, safeAlt + offset);
 }
 
 /**
@@ -29,5 +36,7 @@ export function calculateTruePressureAlt(targetAlt, qnh) {
  * @returns {number} Calculated factor
  */
 export function getIsaTempDeviationFactor(isaDev, rate) {
-  return isaDev > 0 ? isaDev * rate : 0;
+  const safeIsaDev = typeof isaDev === 'number' && !isNaN(isaDev) ? isaDev : 0;
+  const safeRate = typeof rate === 'number' && !isNaN(rate) ? rate : 0;
+  return safeIsaDev > 0 ? safeIsaDev * safeRate : 0;
 }
