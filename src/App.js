@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CalculatorGround from './components/CalculatorGround';
 import CalculatorClimb from './components/CalculatorClimb';
 import CalculatorCruise from './components/CalculatorCruise';
@@ -7,7 +7,22 @@ import CalculatorHolding from './components/CalculatorHolding';
 import EmergencySuite from './components/EmergencySuite';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('cruise'); // default tab
+  const [activeTab, setActiveTab] = useState('cruise');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Track live network state modifications automatically
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const renderActiveComponent = () => {
     switch (activeTab) {
@@ -31,14 +46,28 @@ export default function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <div className="brand">
+        {/* Left slot placeholder to anchor the centered branding */}
+        <div className="header-left-spacer"></div>
+
+        {/* Centered Brand Assets */}
+        <div className="brand centered-load">
           <div className="brand-logo"></div>
           <div className="brand-text">
             <h1>PathOptix</h1>
             <span className="subtitle">E195-E2 Performance & Vertical Profile Optimizer</span>
           </div>
         </div>
-        <nav className="nav-tabs">
+
+        {/* Dynamic Network Status Container */}
+        <div className={`system-status status-container-box ${isOnline ? 'net-online' : 'net-offline'}`}>
+          <span className={`status-indicator ${isOnline ? 'online-glow' : 'offline-glow'}`}></span>
+          <span className="status-text">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+        </div>
+      </header>
+
+      <main className="app-content">
+        {/* Navigation Tabs relocated to main body context bar */}
+        <nav className="nav-tabs body-nav-tier">
           <button 
             className={`nav-tab-btn ${activeTab === 'ground' ? 'active' : ''}`}
             onClick={() => setActiveTab('ground')}
@@ -76,14 +105,11 @@ export default function App() {
             <span className="icon">⚠️</span> Emergency Suite
           </button>
         </nav>
-        <div className="system-status">
-          <span className="status-indicator online"></span>
-          <span className="status-text">OFFLINE ENGINE READY</span>
-        </div>
-      </header>
 
-      <main className="app-content">
-        {renderActiveComponent()}
+        {/* Active Performance Workspace Panel */}
+        <div className="workspace-view-wrapper">
+          {renderActiveComponent()}
+        </div>
       </main>
 
       <footer className="app-footer">
