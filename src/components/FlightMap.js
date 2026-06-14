@@ -46,31 +46,9 @@ export default function FlightMap() {
         <p>Parses operational string logs, plots coordinates, and calculates live kinematics (Distance, GS, ETE).</p>
       </div>
 
-      <div className="panel-body grid-2col">
-        <div className="input-section glass-panel">
-          <h3>Route Entry & Overview</h3>
-          <div className="input-grid-spatial">
-            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
-              <label>Flight Plan String Route</label>
-              <input 
-                type="text" 
-                value={mission.routeString}
-                onChange={(e) => updateMissionField('routeString', e.target.value)}
-                className="touch-input-field"
-                style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
-              />
-            </div>
-          </div>
-          <div className="metrics-summary" style={{ marginTop: '24px' }}>
-            <div className="metric-box" style={{ width: '100%' }}>
-              <span className="label">Total Route Distance</span>
-              <span className="value">{totalDistance} NM</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="results-section glass-panel highlight-accent" style={{ padding: '12px' }}>
-          <div style={{ width: '100%', height: '450px', position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+      <div className="panel-body">
+        <div className="glass-panel highlight-accent" style={{ padding: '12px' }}>
+          <div style={{ width: '100%', height: '480px', position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
             <MapContainer center={[44.5, -76.5]} zoom={6} style={{ width: '100%', height: '100%', background: '#0a0c10' }} zoomControl={false}>
               <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" attribution='&copy; CartoDB' />
               {activeCoords.length > 1 && <Polyline positions={activeCoords} pathOptions={{ color: '#00f0ff', weight: 3, opacity: 0.85 }} />}
