@@ -88,9 +88,9 @@ export default function CalculatorDescent() {
           <div className="input-group-tactile">
             <label>Average Wind in Descent</label>
             <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('windFactor', -5, -40, 60)} className="btn-step">──</button>
+              <button type="button" onClick={() => adjustInput('windFactor', -5, -200, 200)} className="btn-step">──</button>
               <span className="value-display">{inputs.windFactor >= 0 ? `+${inputs.windFactor} TW` : `${Math.abs(inputs.windFactor)} HW`}</span>
-              <button type="button" onClick={() => adjustInput('windFactor', 5, -40, 60)} className="btn-step">+</button>
+              <button type="button" onClick={() => adjustInput('windFactor', 5, -200, 200)} className="btn-step">+</button>
             </div>
           </div>
 
