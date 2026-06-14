@@ -5,7 +5,7 @@ import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 
 export default function CalculatorCruise() {
   const [inputs, setInputs] = useState({
-    weight: 52000,
+    weight: 115000, // in lbs
     flightLevel: 350,
     isaDev: 0,
     costIndex: 15,
@@ -35,8 +35,9 @@ export default function CalculatorCruise() {
   // Perform dynamic calculations
   const correctedCI = getCorrectedCostIndex(inputs.costIndex, inputs.wind);
   
-  // Convert Weight from KG to LBS for matrix query
-  const weightLbs = inputs.weight * 2.20462;
+  // Weight is in lbs already, matching database matrix headers
+  const weightLbs = inputs.weight;
+  const weightKg = inputs.weight / 2.20462;
   
   let targetMach = 0.78; // Fallback default
   if (cruiseData && cruiseData.cruise_mach_matrix && cruiseData.cruise_mach_matrix["33000"]) {
@@ -62,27 +63,29 @@ export default function CalculatorCruise() {
   const tas = Math.round(getTASFromMach(targetMach, actualTemp));
   const gs = Math.round(tas + inputs.wind);
 
-  // Fuel Flow Model (modulated by Mach, weight, OAT, and altitude)
-  const baseFF = 1600; // Base fuel flow kg/h for twin engine E195-E2
+  // Fuel Flow Model in kg/h (modulated by Mach, weight, OAT, and altitude)
+  const baseFFKg = 1600; 
   const machFactor = (targetMach - 0.70) * 4000;
-  const weightFactor = (inputs.weight - 40000) * 0.025;
+  const weightFactor = (weightKg - 40000) * 0.025;
   const tempFactor = inputs.isaDev * 10;
   const altFactor = (inputs.flightLevel - 330) * -12;
   
-  const fuelFlow = Math.round(Math.max(1200, baseFF + machFactor + weightFactor + tempFactor + altFactor));
+  const fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + tempFactor + altFactor);
+  // Convert Fuel Flow from KG to LBS (Porter Airlines requirement)
+  const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
 
-  // Specific Range: NM per kg of fuel
-  const specificRange = fuelFlow > 0 ? Math.round((gs / fuelFlow) * 1000) / 1000 : 0;
+  // Specific Range: NM per lb of fuel (Porter Airlines requirement)
+  const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
 
   // Optimal Flight Level (higher altitude is optimal for lower weights)
-  const optimalFL = Math.round((410 - (inputs.weight - 38000) * 0.0004) / 10) * 10;
+  const optimalFL = Math.round((410 - (inputs.weight - 85000) * 0.00018) / 10) * 10;
   const maxOperatingFL = 410; // Structural limit
 
   return (
     <div className="panel-container">
       <div className="panel-header">
         <h2>Cruise Economic Profile & Speed Optimizer</h2>
-        <p>Dynamic modulation of Mach/IAS speeds and fuel flow optimization based on cost index and flight level.</p>
+        <p>Dynamic modulation of Mach/IAS speeds and fuel flow optimization based on cost index and flight level (Units: LBS).</p>
       </div>
 
       <div className="panel-body grid-2col">
@@ -90,16 +93,16 @@ export default function CalculatorCruise() {
           <h3>In-Flight Cruise Settings</h3>
 
           <div className="input-group">
-            <label>Current Aircraft Weight: {inputs.weight.toLocaleString()} kg</label>
+            <label>Current Aircraft Weight: {inputs.weight.toLocaleString()} lbs</label>
             <input 
               type="range" 
-              min="38000" 
-              max="58000" 
-              step="500" 
+              min="85000" 
+              max="130000" 
+              step="1000" 
               value={inputs.weight} 
               onChange={(e) => handleInputChange('weight', parseInt(e.target.value))} 
             />
-            <span className="caption">Equivalent to {(inputs.weight * 2.20462).toLocaleString(undefined, {maximumFractionDigits: 0})} lbs.</span>
+            <span className="caption">Equivalent to {Math.round(weightKg).toLocaleString()} kg.</span>
           </div>
 
           <div className="input-group">
@@ -160,11 +163,11 @@ export default function CalculatorCruise() {
             </div>
             <div className="metric-box">
               <span className="label">Total Fuel Flow</span>
-              <span className="value">{fuelFlow.toLocaleString()} kg/h</span>
+              <span className="value">{fuelFlowLbs.toLocaleString()} lbs/h</span>
             </div>
             <div className="metric-box">
               <span className="label">Specific Range</span>
-              <span className="value">{specificRange.toFixed(3)} NM/kg</span>
+              <span className="value">{specificRange.toFixed(3)} NM/lb</span>
             </div>
           </div>
 

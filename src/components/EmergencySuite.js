@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 export default function EmergencySuite() {
   const [inputs, setInputs] = useState({
-    cruiseWeight: 54000,
+    cruiseWeight: 115000, // in lbs
     oatDev: 10,
     antiIce: false,
     selectedTerrainAlt: 8000
@@ -12,9 +12,12 @@ export default function EmergencySuite() {
     setInputs(prev => ({ ...prev, [key]: val }));
   };
 
+  // Convert weight to KG internally for calculations
+  const cruiseWeightKg = inputs.cruiseWeight / 2.20462;
+
   // OEI (One Engine Inoperative) Ceiling calculation
   const baseCeiling = 28500; // Standard OEI ceiling at 40,000 kg
-  const weightPenalty = (inputs.cruiseWeight - 40000) * 0.38;
+  const weightPenalty = (cruiseWeightKg - 40000) * 0.38;
   const tempPenalty = inputs.oatDev * 180;
   const antiIcePenalty = inputs.antiIce ? 1200 : 0;
   
@@ -22,24 +25,25 @@ export default function EmergencySuite() {
   const oeiFL = Math.floor(oeiCeiling / 100);
 
   // Driftdown Speed (Green Dot)
-  const driftdownSpeed = Math.round(198 + (inputs.cruiseWeight - 40000) * 0.0014 + inputs.oatDev * 0.2);
+  const driftdownSpeed = Math.round(198 + (cruiseWeightKg - 40000) * 0.0014 + inputs.oatDev * 0.2);
 
   // Clearance Margin over terrain
   const clearanceMargin = oeiCeiling - inputs.selectedTerrainAlt;
 
   // Driftdown Distance & Time to level-off
-  const driftdownDistance = Math.round(58 + (inputs.cruiseWeight - 40000) * 0.0012 + inputs.oatDev * 0.4);
-  const driftdownTimeMin = 13.5 + (inputs.cruiseWeight - 40000) * 0.0003 + inputs.oatDev * 0.08;
+  const driftdownDistance = Math.round(58 + (cruiseWeightKg - 40000) * 0.0012 + inputs.oatDev * 0.4);
+  const driftdownTimeMin = 13.5 + (cruiseWeightKg - 40000) * 0.0003 + inputs.oatDev * 0.08;
   const driftdownTime = `${Math.floor(driftdownTimeMin)}:${Math.round((driftdownTimeMin % 1) * 60).toString().padStart(2, '0')} min`;
 
-  // Level-off Fuel Flow (OEI) - Single Engine fuel flow in kg/h
-  const oeiFuelFlow = Math.round(920 + (inputs.cruiseWeight - 40000) * 0.015 + inputs.oatDev * 5);
+  // Level-off Fuel Flow (OEI) - Single Engine fuel flow in lbs/h (Porter Airlines requirement)
+  const oeiFuelFlowKg = 920 + (cruiseWeightKg - 40000) * 0.015 + inputs.oatDev * 5;
+  const oeiFuelFlowLbs = Math.round(oeiFuelFlowKg * 2.20462);
 
   return (
     <div className="panel-container">
       <div className="panel-header warning-theme">
         <h2>Emergency OEI Driftdown & Suite</h2>
-        <p>Tactical decision support for single-engine failure (OEI) during cruise. Computes drift-down paths and terrain clearance margins.</p>
+        <p>Tactical decision support for single-engine failure (OEI) during cruise. Computes drift-down paths and terrain clearance margins (Units: LBS).</p>
       </div>
 
       <div className="panel-body grid-2col">
@@ -47,15 +51,16 @@ export default function EmergencySuite() {
           <h3>OEI Atmospheric & Status Inputs</h3>
 
           <div className="input-group">
-            <label>Current Weight: {inputs.cruiseWeight.toLocaleString()} kg</label>
+            <label>Current Weight: {inputs.cruiseWeight.toLocaleString()} lbs</label>
             <input 
               type="range" 
-              min="40000" 
-              max="58000" 
+              min="90000" 
+              max="130000" 
               step="1000" 
               value={inputs.cruiseWeight} 
               onChange={(e) => handleInputChange('cruiseWeight', parseInt(e.target.value))} 
             />
+            <span className="caption">Equivalent to {Math.round(cruiseWeightKg).toLocaleString()} kg.</span>
           </div>
 
           <div className="input-group">
@@ -127,7 +132,7 @@ export default function EmergencySuite() {
             </div>
             <div className="table-row">
               <span>Level-off Fuel Flow (OEI)</span>
-              <span>{oeiFuelFlow} kg/h</span>
+              <span>{oeiFuelFlowLbs.toLocaleString()} lbs/h</span>
             </div>
             <div className="table-row">
               <span>Anti-Ice Ceiling Penalty</span>

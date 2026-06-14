@@ -4,7 +4,7 @@ export default function CalculatorGround() {
   const [inputs, setInputs] = useState({
     oat: 15,
     altitude: 0,
-    tow: 54000,
+    tow: 120000, // in lbs
     wind: 0,
     runwayCondition: 'dry'
   });
@@ -13,9 +13,12 @@ export default function CalculatorGround() {
     setInputs(prev => ({ ...prev, [key]: val }));
   };
 
+  // Convert TOW to KG internally for standard aerodynamic formulas
+  const towKg = inputs.tow / 2.20462;
+
   // V-speeds calculations
   const baseV2 = 132;
-  const weightV2Shift = (inputs.tow - 40000) * 0.00065;
+  const weightV2Shift = (towKg - 40000) * 0.00065;
   const tempV2Shift = inputs.oat * 0.12;
   const altV2Shift = (inputs.altitude / 1000) * 0.35;
   
@@ -27,26 +30,27 @@ export default function CalculatorGround() {
 
   // Required Runway Length calculation
   const baseLength = 1380;
-  const weightLengthFactor = (inputs.tow - 40000) * 0.038;
+  const weightLengthFactor = (towKg - 40000) * 0.038;
   const tempLengthFactor = Math.max(0, inputs.oat - 15) * 14;
   const altLengthFactor = (inputs.altitude / 1000) * 85;
-  const windLengthFactor = inputs.wind * 9; // headwind reduces runway length, tailwind increases it (since wind range goes from tailwind negative to headwind positive)
+  const windLengthFactor = inputs.wind * 9;
   
   const runwayMultiplier = inputs.runwayCondition === 'wet' ? 1.22 : inputs.runwayCondition === 'contaminated' ? 1.58 : 1.0;
   
   const requiredRunway = Math.round((baseLength + weightLengthFactor + tempLengthFactor + altLengthFactor - windLengthFactor) * runwayMultiplier);
 
-  // Maximum allowed TOW based on temperature and altitude constraints
+  // Maximum allowed TOW based on temperature and altitude constraints (in kg, then convert to lbs)
   const structuralMTOW = 61500;
   const tempLimitMTOW = Math.max(0, inputs.oat - 30) * 350;
   const altLimitMTOW = (inputs.altitude / 1000) * 750;
-  const maxAllowedTOW = Math.round(structuralMTOW - tempLimitMTOW - altLimitMTOW);
+  const maxAllowedTOWKg = Math.round(structuralMTOW - tempLimitMTOW - altLimitMTOW);
+  const maxAllowedTOWLbs = Math.round(maxAllowedTOWKg * 2.20462);
 
   // Thrust Mode determination
   let thrustMode = "TO-1 (100% Full Thrust)";
-  if (requiredRunway < 1500 && inputs.tow < 46000) {
+  if (requiredRunway < 1500 && towKg < 46000) {
     thrustMode = "TO-3 (Flex Derate 15%)";
-  } else if (requiredRunway < 1850 && inputs.tow < 52000) {
+  } else if (requiredRunway < 1850 && towKg < 52000) {
     thrustMode = "TO-2 (Flex Derate 10%)";
   }
 
@@ -88,15 +92,16 @@ export default function CalculatorGround() {
           </div>
 
           <div className="input-group">
-            <label>Take-off Weight (TOW): {inputs.tow.toLocaleString()} kg</label>
+            <label>Take-off Weight (TOW): {inputs.tow.toLocaleString()} lbs</label>
             <input 
               type="range" 
-              min="40000" 
-              max="62000" 
-              step="500" 
+              min="85000" 
+              max="136000" 
+              step="1000" 
               value={inputs.tow} 
               onChange={(e) => handleInputChange('tow', parseInt(e.target.value))} 
             />
+            <span className="caption">Equivalent to {Math.round(towKg).toLocaleString()} kg.</span>
           </div>
 
           <div className="input-group">
@@ -159,7 +164,7 @@ export default function CalculatorGround() {
             </div>
             <div className="table-row">
               <span>Maximum Allowed TOW</span>
-              <span>{maxAllowedTOW.toLocaleString()} kg</span>
+              <span>{maxAllowedTOWLbs.toLocaleString()} lbs</span>
             </div>
             <div className="table-row">
               <span>V50 (Screen Height Speed)</span>
@@ -167,9 +172,9 @@ export default function CalculatorGround() {
             </div>
           </div>
 
-          {inputs.tow > maxAllowedTOW ? (
+          {inputs.tow > maxAllowedTOWLbs ? (
             <div className="alert-banner danger">
-              <strong>CRITICAL:</strong> Take-off weight ({inputs.tow.toLocaleString()} kg) exceeds the maximum allowed climb/field limit of {maxAllowedTOW.toLocaleString()} kg. Reduce payload or wait for lower temperature.
+              <strong>CRITICAL:</strong> Take-off weight ({inputs.tow.toLocaleString()} lbs) exceeds the maximum allowed climb/field limit of {maxAllowedTOWLbs.toLocaleString()} lbs. Reduce payload/fuel or wait for lower temperature.
             </div>
           ) : inputs.oat > 35 || inputs.altitude > 4000 ? (
             <div className="alert-banner warning">

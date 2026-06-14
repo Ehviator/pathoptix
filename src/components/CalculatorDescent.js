@@ -47,8 +47,9 @@ export default function CalculatorDescent() {
   // Distance in feet = todDistance * 6076.1
   const glideRatio = altDiff > 0 ? Math.round(((todDistance * 6076.1) / altDiff) * 10) / 10 : 0;
 
-  // Fuel burn approximation: ~1.4 kg per NM in idle descent
-  const fuelBurn = Math.round(todDistance * 1.35 + (inputs.windFactor * 0.05));
+  // Fuel burn approximation: ~3 lbs per NM in idle descent (Porter Airlines requirement)
+  const fuelBurnKg = todDistance * 1.35 + (inputs.windFactor * 0.05);
+  const fuelBurnLbs = Math.round(fuelBurnKg * 2.20462);
 
   // Cabin rate of descent (passenger comfort limit)
   const cabinRate = Math.round(-320 + (vsi + 1800) * 0.08);
@@ -150,7 +151,7 @@ export default function CalculatorDescent() {
             </div>
             <div className="table-row">
               <span>Descent Fuel Burn</span>
-              <span>{fuelBurn} kg</span>
+              <span>{fuelBurnLbs} lbs</span>
             </div>
             <div className="table-row">
               <span>Wind Adjusted Shift</span>
