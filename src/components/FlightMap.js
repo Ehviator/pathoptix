@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import WaypointLog from './WaypointLog';
 
-// Fix generic Leaflet marker icon asset mapping bugs inside single-page applications
+// Resolve generic Leaflet marker asset resolution faults inside SPAs
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: '/images/marker-icon-2x.png',
@@ -12,7 +10,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: '/images/marker-shadow.png',
 });
 
-// Custom component to dynamically re-center map view tracking frames when the route profile updates
+// Dynamic view framing adjustment block
 function MapRefocus({ coords }) {
   const map = useMap();
   useEffect(() => {
@@ -20,17 +18,14 @@ function MapRefocus({ coords }) {
       try {
         const bounds = L.latLngBounds(coords);
         if (bounds.isValid()) {
-          // Delay execution to ensure browser has resolved element layout sizes
           const timer = setTimeout(() => {
             map.invalidateSize();
-            if (map.getSize().x > 0) {
-              map.fitBounds(bounds, { padding: [50, 50] });
-            }
-          }, 100);
+            map.fitBounds(bounds, { padding: [40, 40] });
+          }, 150);
           return () => clearTimeout(timer);
         }
       } catch (e) {
-        console.error("Map refocus layout safety fault:", e);
+        console.error("Geospatial reframing exception:", e);
       }
     }
   }, [coords, map]);
@@ -41,9 +36,10 @@ export default function FlightMap() {
   const [routeInput, setRouteString] = useState("YTZ SEDAR YOW");
   const [navDb, setNavDb] = useState(null);
   const [activeCoords, setActiveCoords] = useState([]);
-  const [activeWaypoints, setActiveWaypoints] = useState([]);
+  const [navLog, setNavLog] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Synchronize aeronautical waypoint spatial database
   useEffect(() => {
     fetch('/data/nav_db.json')
       .then(res => res.json())
@@ -57,91 +53,112 @@ export default function FlightMap() {
       });
   }, []);
 
-  // Parse direct string entry logs down to precise spatial track arrays
   const parseFlightRoute = () => {
     if (!navDb || !navDb.waypoints) return;
     
     const elements = routeInput.toUpperCase().trim().split(/\s+/);
     const resolvedCoords = [];
-    const resolvedWaypoints = [];
+    const initializedLog = [];
 
     elements.forEach(ident => {
       if (navDb.waypoints[ident]) {
         const fix = navDb.waypoints[ident];
         resolvedCoords.push([fix.lat, fix.lon]);
-        resolvedWaypoints.push({ ident, ...fix });
+        
+        // Instantiate deep tracking parameters for each verified route fix
+        initializedLog.push({
+          ident,
+          type: fix.type,
+          lat: fix.lat,
+          lon: fix.lon,
+          wind: 0,
+          fl: 350,
+          sat: -45,
+          plannedFuel: 5000,
+          actualFuel: 5000
+        });
       }
     });
 
     setActiveCoords(resolvedCoords);
-    setActiveWaypoints(resolvedWaypoints);
+    setNavLog(initializedLog);
   };
 
   useEffect(() => {
     if (navDb) parseFlightRoute();
   }, [navDb]);
 
+  const updateLogField = (index, key, value) => {
+    let parsed = key === 'sat' || key === 'wind' ? parseInt(value, 10) : parseFloat(value);
+    if (isNaN(parsed)) parsed = 0;
+
+    // Wind constraints safety-clamping boundary verification
+    if (key === 'wind') {
+      if (parsed < -200) parsed = -200;
+      if (parsed > 200) parsed = 200;
+    }
+
+    setNavLog(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: parsed };
+      return updated;
+    });
+  };
+
   if (loading) return <div className="panel-container"><p>Synchronizing Navigation Databases...</p></div>;
 
   return (
     <div className="panel-container">
       <div className="panel-header">
-        <h2>Tactical Navigation Map & Route Advisor</h2>
-        <p>Parses operational string logs, plots coordinates, and maps VOR/NDB fixes onto the flight deck interface.</p>
+        <h2>Flight Map & Waypoint Navlog</h2>
+        <p>Input operational route configurations to compile performance metrics and track fuel profile deltas.</p>
       </div>
 
       <div className="panel-body grid-2col">
-        {/* Left Side: Route Entry Panel */}
+        {/* Route Entry Input Box */}
         <div className="input-section glass-panel">
-          <h3>Route Entry & Waypoints Log</h3>
-          
+          <h3>Flight Route Setup</h3>
           <div className="input-grid-spatial">
             <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
-              <label>Flight Plan String Route</label>
+              <label>String Route Sequence (Fix / VOR / NDB)</label>
               <input 
                 type="text" 
                 value={routeInput}
                 onChange={(e) => setRouteString(e.target.value)}
                 onBlur={parseFlightRoute}
-                placeholder="e.g. YTZ SEDAR YOW"
                 className="touch-input-field"
                 style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
               />
             </div>
           </div>
-
-          {/* Dynamic Waypoint Attribute Readout Rows */}
-          <WaypointLog waypoints={activeWaypoints} />
         </div>
 
-        {/* Right Side: Map Display View */}
-        <div className="results-section glass-panel highlight-accent" style={{ padding: '12px', minHeight: '450px' }}>
-          <div className="map-rendering-container">
+        {/* Height-Secured Spatial Leaflet Viewport Frame */}
+        <div className="results-section glass-panel highlight-accent" style={{ padding: '12px' }}>
+          <div style={{ width: '100%', height: '450px', position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
             <MapContainer 
               center={[44.5, -76.5]} 
               zoom={6} 
               style={{ width: '100%', height: '100%', background: '#0a0c10' }}
-              zoomControl={false} // Clean HUD display layout optimization
+              zoomControl={false}
             >
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+                attribution='&copy; CartoDB'
               />
               
               {activeCoords.length > 1 && (
                 <Polyline 
                   positions={activeCoords} 
-                  pathOptions={{ color: '#00f0ff', weight: 3, opacity: 0.85, dashArray: '4, 8' }} 
+                  pathOptions={{ color: '#00f0ff', weight: 3, opacity: 0.85 }} 
                 />
               )}
 
-              {activeWaypoints.map((wp, idx) => (
+              {navLog.map((wp, idx) => (
                 <Marker position={[wp.lat, wp.lon]} key={`marker-${wp.ident}-${idx}`}>
                   <Popup>
-                    <div style={{ color: '#000000', fontFamily: 'sans-serif', fontSize: '12px' }}>
-                      <strong>{wp.ident}</strong><br />
-                      Type: {wp.type}<br />
-                      {wp.freq ? `Freq: ${wp.freq}` : ''}
+                    <div style={{ color: '#000000', fontSize: '12px' }}>
+                      <strong>{wp.ident}</strong> ({wp.type})
                     </div>
                   </Popup>
                 </Marker>
@@ -152,6 +169,93 @@ export default function FlightMap() {
           </div>
         </div>
       </div>
+
+      {/* Direct Manual Entry Tactical Navlog Table Container */}
+      {navLog.length > 0 && (
+        <div className="glass-panel" style={{ marginTop: '24px', overflowX: 'auto' }}>
+          <h3>Waypoint Progress Log (Direct Entry)</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '16px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase' }}>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Fix</th>
+                <th style={{ padding: '12px' }}>Wind (kt)</th>
+                <th style={{ padding: '12px' }}>Altitude (FL)</th>
+                <th style={{ padding: '12px' }}>SAT (°C)</th>
+                <th style={{ padding: '12px' }}>Planned Fuel (lbs)</th>
+                <th style={{ padding: '12px' }}>Actual Fuel (lbs)</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>Fuel Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {navLog.map((row, idx) => {
+                const fuelDelta = row.actualFuel - row.plannedFuel;
+                return (
+                  <tr key={`${row.ident}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '14px 12px', textAlign: 'left', fontWeight: '700', fontSize: '16px' }}>
+                      {row.ident}
+                      <span style={{ display: 'block', fontSize: '11px', fontWeight: '400', color: 'rgba(255,255,255,0.4)' }}>{row.type}</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <input 
+                        type="number" 
+                        key={`wind-${idx}-${row.wind}`}
+                        defaultValue={row.wind}
+                        onBlur={(e) => updateLogField(idx, 'wind', e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', textAlign: 'center', width: '80px' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <input 
+                        type="number" 
+                        key={`fl-${idx}-${row.fl}`}
+                        defaultValue={row.fl}
+                        onBlur={(e) => updateLogField(idx, 'fl', e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', textAlign: 'center', width: '80px' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <input 
+                        type="number" 
+                        key={`sat-${idx}-${row.sat}`}
+                        defaultValue={row.sat}
+                        onBlur={(e) => updateLogField(idx, 'sat', e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', textAlign: 'center', width: '80px' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <input 
+                        type="number" 
+                        key={`pf-${idx}-${row.plannedFuel}`}
+                        defaultValue={row.plannedFuel}
+                        onBlur={(e) => updateLogField(idx, 'plannedFuel', e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', textAlign: 'center', width: '100px' }}
+                      />
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <input 
+                        type="number" 
+                        key={`af-${idx}-${row.actualFuel}`}
+                        defaultValue={row.actualFuel}
+                        onBlur={(e) => updateLogField(idx, 'actualFuel', e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', textAlign: 'center', width: '100px' }}
+                      />
+                    </td>
+                    <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '700', fontFamily: 'monospace', fontSize: '15px' }}>
+                      {fuelDelta > 0 ? (
+                        <span style={{ color: '#39ff14' }}>+{fuelDelta.toLocaleString()} lbs</span>
+                      ) : fuelDelta < 0 ? (
+                        <span style={{ color: '#ff4a4a' }}>{fuelDelta.toLocaleString()} lbs</span>
+                      ) : (
+                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>ON PROFILE</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
