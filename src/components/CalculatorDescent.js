@@ -10,13 +10,14 @@ export default function CalculatorDescent() {
     antiIce: false
   });
 
-  const adjustInput = (key, step, min, max) => {
-    setInputs(prev => {
-      let nextVal = prev[key] + step;
-      if (key === 'fpa') nextVal = Math.round(nextVal * 10) / 10;
-      if (nextVal < min || nextVal > max) return prev;
-      return { ...prev, [key]: nextVal };
-    });
+  const handleManualEntry = (key, value, min, max) => {
+    let parsed = key === 'fpa' ? parseFloat(value) : parseInt(value, 10);
+    if (isNaN(parsed)) return;
+    
+    if (parsed < min) parsed = min;
+    if (parsed > max) parsed = max;
+
+    setInputs(prev => ({ ...prev, [key]: parsed }));
   };
 
   const altDiff = (inputs.cruiseFL * 100) - inputs.targetAltitude;
@@ -49,52 +50,60 @@ export default function CalculatorDescent() {
         <div className="input-section glass-panel">
           <h3>Vertical Profile Inputs</h3>
 
-          <div className="input-group-tactile">
-            <label>Cruise Flight Level (FL)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('cruiseFL', -10, 150, 410)} className="btn-step">──</button>
-              <span className="value-display">FL {inputs.cruiseFL}</span>
-              <button type="button" onClick={() => adjustInput('cruiseFL', 10, 150, 410)} className="btn-step">+</button>
+          <div className="input-grid-spatial">
+            <div className="input-cell-spatial">
+              <label>Cruise Flight Level (FL)</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.cruiseFL}
+                onBlur={(e) => handleManualEntry('cruiseFL', e.target.value, 150, 410)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Target Altitude (ft)</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.targetAltitude}
+                onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 0, 15000)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Descent Speed (KIAS)</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.descentSpeed}
+                onBlur={(e) => handleManualEntry('descentSpeed', e.target.value, 240, 310)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Flight Path Angle (FPA)</label>
+              <input 
+                type="number" 
+                step="0.1"
+                defaultValue={inputs.fpa}
+                onBlur={(e) => handleManualEntry('fpa', e.target.value, 2.0, 4.0)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
+              <label>Average Wind (kt)</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.windFactor}
+                onBlur={(e) => handleManualEntry('windFactor', e.target.value, -200, 200)}
+                className="touch-input-field"
+              />
             </div>
           </div>
 
-          <div className="input-group-tactile">
-            <label>Target Altitude (ft)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('targetAltitude', -500, 0, 15000)} className="btn-step">──</button>
-              <span className="value-display">{inputs.targetAltitude.toLocaleString()} ft</span>
-              <button type="button" onClick={() => adjustInput('targetAltitude', 500, 0, 15000)} className="btn-step">+</button>
-            </div>
-          </div>
-
-          <div className="input-group-tactile">
-            <label>Descent Speed Schedule (KIAS)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('descentSpeed', -5, 240, 310)} className="btn-step">──</button>
-              <span className="value-display">{inputs.descentSpeed} kt</span>
-              <button type="button" onClick={() => adjustInput('descentSpeed', 5, 240, 310)} className="btn-step">+</button>
-            </div>
-          </div>
-
-          <div className="input-group-tactile">
-            <label>Flight Path Angle (FPA)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('fpa', -0.1, 2.0, 4.0)} className="btn-step">──</button>
-              <span className="value-display">{inputs.fpa.toFixed(1)}°</span>
-              <button type="button" onClick={() => adjustInput('fpa', 0.1, 2.0, 4.0)} className="btn-step">+</button>
-            </div>
-          </div>
-
-          <div className="input-group-tactile">
-            <label>Average Wind in Descent</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('windFactor', -5, -200, 200)} className="btn-step">──</button>
-              <span className="value-display">{inputs.windFactor >= 0 ? `+${inputs.windFactor} TW` : `${Math.abs(inputs.windFactor)} HW`}</span>
-              <button type="button" onClick={() => adjustInput('windFactor', 5, -200, 200)} className="btn-step">+</button>
-            </div>
-          </div>
-
-          <div className="input-group-toggle">
+          <div className="input-group-toggle" style={{ marginTop: '24px' }}>
             <label className="toggle-container">
               <input 
                 type="checkbox" 
