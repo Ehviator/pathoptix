@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import { useMission } from '../context/MissionContext.js';
 import L from 'leaflet';
@@ -9,25 +9,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
-
-// Haversine formula to calculate great-circle distance between two coordinates in Nautical Miles
-function calculateDistanceNM(lat1, lon1, lat2, lon2) {
-  const R = 3440.065; // Radius of the Earth in Nautical Miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return Math.round(R * c);
-}
-
-// Basic True Airspeed Approximation (Rule of Thumb for Jet Cruise)
-function estimateTAS(fl, sat) {
-  // Rough baseline: Mach 0.78 at typical cruise translates to ~440-460 KTAS depending on SAT
-  // A simplified placeholder for dynamic atmospheric TAS calculation
-  return Math.round(450 + (sat + 45) * 1.2 + (fl - 350) * 0.5);
-}
 
 function MapRefocus({ coords }) {
   const map = useMap();
@@ -51,86 +32,10 @@ function MapRefocus({ coords }) {
 }
 
 export default function FlightMap() {
-  const { mission, updateMissionField, navDb, loading } = useMission();
-  const [activeCoords, setActiveCoords] = useState([]);
-  const [navLog, setNavLog] = useState([]);
-  const [totalDistance, setTotalDistance] = useState(0);
+  const { mission, updateMissionField, loading, navLog, totalDistance, updateNavLogField } = useMission();
 
-  const parseFlightRoute = () => {
-    if (!navDb || !navDb.waypoints) return;
-    
-    const elements = mission.routeString.toUpperCase().trim().split(/\s+/);
-    const resolvedCoords = [];
-    const initializedLog = [];
-    let accumulatedDistance = 0;
-
-    for (let i = 0; i < elements.length; i++) {
-      const ident = elements[i];
-      if (navDb.waypoints[ident]) {
-        const fix = navDb.waypoints[ident];
-        resolvedCoords.push([fix.lat, fix.lon]);
-        
-        let legDist = 0;
-        if (i > 0 && navDb.waypoints[elements[i-1]]) {
-          const prevFix = navDb.waypoints[elements[i-1]];
-          legDist = calculateDistanceNM(prevFix.lat, prevFix.lon, fix.lat, fix.lon);
-          accumulatedDistance += legDist;
-        }
-
-        const initialTAS = estimateTAS(mission.cruiseFL, -45);
-
-        initializedLog.push({
-          ident,
-          type: fix.type,
-          lat: fix.lat,
-          lon: fix.lon,
-          legDistance: legDist,
-          wind: 0,
-          fl: mission.cruiseFL,
-          sat: -45,
-          tas: initialTAS,
-          gs: initialTAS, // GS = TAS + Wind (0 initially)
-          plannedFuel: 5000,
-          actualFuel: 5000
-        });
-      }
-    }
-
-    setActiveCoords(resolvedCoords);
-    setNavLog(initializedLog);
-    setTotalDistance(accumulatedDistance);
-  };
-
-  useEffect(() => {
-    if (navDb) parseFlightRoute();
-  }, [navDb, mission.routeString]);
-
-  const updateLogField = (index, key, value) => {
-    let parsed = key === 'sat' || key === 'wind' || key === 'fl' ? parseInt(value, 10) : parseFloat(value);
-    if (isNaN(parsed)) parsed = 0;
-
-    if (key === 'wind') {
-      if (parsed < -200) parsed = -200;
-      if (parsed > 200) parsed = 200;
-    }
-
-    setNavLog(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [key]: parsed };
-      
-      // Dynamic Kinematics Recalculation Trigger
-      if (['wind', 'fl', 'sat'].includes(key)) {
-        const currentFl = key === 'fl' ? parsed : updated[index].fl;
-        const currentSat = key === 'sat' ? parsed : updated[index].sat;
-        const currentWind = key === 'wind' ? parsed : updated[index].wind;
-        
-        updated[index].tas = estimateTAS(currentFl, currentSat);
-        updated[index].gs = Math.max(100, updated[index].tas + currentWind);
-      }
-      
-      return updated;
-    });
-  };
+  // Derive active map polyline coordinates dynamically from the global navLog waypoints
+  const activeCoords = navLog.map(wp => [wp.lat, wp.lon]);
 
   if (loading) return <div className="panel-container"><p>Synchronizing Navigation Databases...</p></div>;
 
@@ -151,7 +56,6 @@ export default function FlightMap() {
                 type="text" 
                 value={mission.routeString}
                 onChange={(e) => updateMissionField('routeString', e.target.value)}
-                onBlur={parseFlightRoute}
                 className="touch-input-field"
                 style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
               />
@@ -214,13 +118,13 @@ export default function FlightMap() {
                       {row.legDistance === 0 ? '--' : row.legDistance}
                     </td>
                     <td style={{ padding: '8px', textAlign: 'center' }}>
-                      <input type="number" defaultValue={row.wind} onBlur={(e) => updateLogField(idx, 'wind', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
+                      <input type="number" defaultValue={row.wind} onBlur={(e) => updateNavLogField(idx, 'wind', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
                     </td>
                     <td style={{ padding: '8px', textAlign: 'center' }}>
-                      <input type="number" defaultValue={row.fl} onBlur={(e) => updateLogField(idx, 'fl', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
+                      <input type="number" defaultValue={row.fl} onBlur={(e) => updateNavLogField(idx, 'fl', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
                     </td>
                     <td style={{ padding: '8px', textAlign: 'center' }}>
-                      <input type="number" defaultValue={row.sat} onBlur={(e) => updateLogField(idx, 'sat', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
+                      <input type="number" defaultValue={row.sat} onBlur={(e) => updateNavLogField(idx, 'sat', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '60px' }} />
                     </td>
                     <td style={{ padding: '8px', textAlign: 'center', fontSize: '13px' }}>
                       <span style={{ color: 'rgba(255,255,255,0.6)' }}>{row.tas} / </span><strong style={{ color: '#fff' }}>{row.gs}</strong>
@@ -229,8 +133,8 @@ export default function FlightMap() {
                       {timeFormatted}
                     </td>
                     <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <input type="number" defaultValue={row.plannedFuel} onBlur={(e) => updateLogField(idx, 'plannedFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
-                      <input type="number" defaultValue={row.actualFuel} onBlur={(e) => updateLogField(idx, 'actualFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
+                      <input type="number" defaultValue={row.plannedFuel} onBlur={(e) => updateNavLogField(idx, 'plannedFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
+                      <input type="number" defaultValue={row.actualFuel} onBlur={(e) => updateNavLogField(idx, 'actualFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '700', fontFamily: 'monospace', fontSize: '14px' }}>
                       {fuelDelta > 0 ? <span style={{ color: '#39ff14' }}>+{fuelDelta}</span> : fuelDelta < 0 ? <span style={{ color: '#ff4a4a' }}>{fuelDelta}</span> : <span style={{ color: 'rgba(255,255,255,0.4)' }}>OK</span>}

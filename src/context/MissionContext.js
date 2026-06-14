@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getLegalMaxAltitude } from '../engine/interpolation.js';
+import { calculateDistanceNM, estimateTAS } from '../engine/kinematics.js';
 
 const MissionContext = createContext(null);
 
@@ -33,6 +34,10 @@ export function MissionProvider({ children }) {
   const [descentPerf, setDescentPerf] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Global Flight Log and Distance States
+  const [navLog, setNavLog] = useState([]);
+  const [totalDistance, setTotalDistance] = useState(0);
+
   // Parallel asynchronous database initialization
   useEffect(() => {
     Promise.all([
@@ -54,6 +59,85 @@ export function MissionProvider({ children }) {
     });
   }, []);
 
+  // Non-destructive flight route parser & reconciliation algorithm
+  const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL) => {
+    if (!database || !database.waypoints) return { newLog: [], newDistance: 0 };
+
+    const elements = routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
+    const newLog = [];
+    let accumulatedDistance = 0;
+    const consumedIndices = new Set();
+
+    for (let i = 0; i < elements.length; i++) {
+      const ident = elements[i];
+      if (database.waypoints[ident]) {
+        const fix = database.waypoints[ident];
+        
+        let legDist = 0;
+        if (i > 0 && database.waypoints[elements[i-1]]) {
+          const prevFix = database.waypoints[elements[i-1]];
+          legDist = calculateDistanceNM(prevFix.lat, prevFix.lon, fix.lat, fix.lon);
+          accumulatedDistance += legDist;
+        }
+
+        // Match existing waypoint in current navLog to preserve its custom pilot inputs
+        let existing = null;
+        for (let j = 0; j < currentNavLog.length; j++) {
+          if (currentNavLog[j].ident === ident && !consumedIndices.has(j)) {
+            existing = currentNavLog[j];
+            consumedIndices.add(j);
+            break;
+          }
+        }
+
+        if (existing) {
+          // Re-evaluate TAS/GS kinematics in case cruiseFL/SAT/wind changed, while keeping custom inputs
+          const currentTAS = estimateTAS(existing.fl, existing.sat);
+          newLog.push({
+            ...existing,
+            legDistance: legDist,
+            tas: currentTAS,
+            gs: Math.max(100, currentTAS + existing.wind)
+          });
+        } else {
+          // Initialize new waypoint with defaults
+          const initialTAS = estimateTAS(cruiseFL || 350, -45);
+          newLog.push({
+            ident,
+            type: fix.type,
+            lat: fix.lat,
+            lon: fix.lon,
+            legDistance: legDist,
+            wind: 0,
+            fl: cruiseFL || 350,
+            sat: -45,
+            tas: initialTAS,
+            gs: initialTAS,
+            plannedFuel: 5000,
+            actualFuel: 5000
+          });
+        }
+      }
+    }
+
+    return { newLog, newDistance: accumulatedDistance };
+  };
+
+  // Safe ref tracking to read the latest navLog state without causing infinite rendering loops in useEffect
+  const navLogRef = useRef([]);
+  useEffect(() => {
+    navLogRef.current = navLog;
+  }, [navLog]);
+
+  // Synchronize NavLog when routeString, cruiseFL, or navDb changes
+  useEffect(() => {
+    if (navDb) {
+      const { newLog, newDistance } = parseFlightRoute(mission.routeString, navLogRef.current, navDb, mission.cruiseFL);
+      setNavLog(newLog);
+      setTotalDistance(newDistance);
+    }
+  }, [navDb, mission.routeString, mission.cruiseFL]);
+
   const updateMissionField = (key, value, min, max) => {
     setMission(prev => {
       let updatedVal = value;
@@ -63,12 +147,39 @@ export function MissionProvider({ children }) {
 
       if (['weight', 'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 'climbFL', 'departureElev'].includes(key)) {
         updatedVal = ['fpa', 'manualMach', 'weight', 'tripDistance', 'plannedFuelBurn'].includes(key) ? parseFloat(value) : parseInt(value, 10);
-        if (isNaN(updatedVal)) return prev; // Keep old value if invalid/empty input on blur
+        if (isNaN(updatedVal)) return prev;
         
         if (min !== undefined && updatedVal < min) updatedVal = min;
         if (max !== undefined && updatedVal > max) updatedVal = max;
       }
       return { ...prev, [key]: updatedVal };
+    });
+  };
+
+  const updateNavLogField = (index, key, value) => {
+    let parsed = key === 'sat' || key === 'wind' || key === 'fl' ? parseInt(value, 10) : parseFloat(value);
+    if (isNaN(parsed)) parsed = 0;
+
+    if (key === 'wind') {
+      if (parsed < -200) parsed = -200;
+      if (parsed > 200) parsed = 200;
+    }
+
+    setNavLog(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: parsed };
+      
+      if (['wind', 'fl', 'sat'].includes(key)) {
+        const currentFl = key === 'fl' ? parsed : updated[index].fl;
+        const currentSat = key === 'sat' ? parsed : updated[index].sat;
+        const currentWind = key === 'wind' ? parsed : updated[index].wind;
+        
+        const newTAS = estimateTAS(currentFl, currentSat);
+        updated[index].tas = newTAS;
+        updated[index].gs = Math.max(100, newTAS + currentWind);
+      }
+      
+      return updated;
     });
   };
 
@@ -85,7 +196,19 @@ export function MissionProvider({ children }) {
   }, [mission.weight, mission.cruiseFL, maxOperatingFL]);
 
   return (
-    <MissionContext.Provider value={{ mission, updateMissionField, navDb, cruiseMatrix, climbPerf, descentPerf, maxOperatingFL, loading }}>
+    <MissionContext.Provider value={{ 
+      mission, 
+      updateMissionField, 
+      navDb, 
+      cruiseMatrix, 
+      climbPerf, 
+      descentPerf, 
+      maxOperatingFL, 
+      loading,
+      navLog,
+      totalDistance,
+      updateNavLogField
+    }}>
       {children}
     </MissionContext.Provider>
   );
