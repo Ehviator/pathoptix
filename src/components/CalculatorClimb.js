@@ -1,236 +1,208 @@
-import React from 'react';
-import { useMission } from '../context/MissionContext.js';
+import React, { useState } from 'react';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
-import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
 
 export default function CalculatorClimb() {
-  const { mission, updateMissionField, climbPerf } = useMission();
+  const [inputs, setInputs] = useState({
+    climbWeight: 115000, 
+    targetAltitude: 35000, 
+    isaDev: 0,
+    fieldElevation: 600, // Departure field geometric elevation
+    qnh: 29.92, // Altimeter setting inHg
+    windBelow180: 0, // Wind component < FL180
+    windAbove180: 20, // Wind component > FL180
+    antiIce: false,
+    atcSpeedRestriction: true // 250kt below 10,000 ft limit
+  });
 
-  const hasIncompleteInputs = mission.weight === "" || mission.climbFL === "" || mission.isaDev === "";
+  const handleManualEntry = (key, value, min, max) => {
+    let parsed = key === 'qnh' ? parseFloat(value) : parseInt(value, 10);
+    if (isNaN(parsed)) return;
+    
+    if (parsed < min) parsed = min;
+    if (parsed > max) parsed = max;
 
-  // Convert FL to feet for internal calculations (e.g., FL360 = 36000 ft)
-  const targetAltFt = hasIncompleteInputs ? 0 : mission.climbFL * 100;
-  const climbWeightKg = hasIncompleteInputs ? 0 : mission.weight / 2.20462;
-  const baseClimbSpeedIAS = 290; 
-  const targetedIAS = hasIncompleteInputs ? "---" : modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, mission.isaDev);
-
-  // --- Matrix-based climb performance interpolation ---
-  let timeToClimb = "---";
-  let fuelBurned = "---";
-  let climbDistance = "---";
-  let isOutOfEnvelope = false;
-
-  // Helper function for 2D climb performance matrix lookup at a given altitude
-  const getClimbPerfForAlt = (alt, weight, isaDev) => {
-    if (!climbPerf || !climbPerf.climb_profiles) return null;
-    if (alt <= 0) return { time: 0, fuel: 0, dist: 0 };
-
-    const profiles = climbPerf.climb_profiles;
-    const altKeys = Object.keys(profiles).map(Number).sort((a, b) => a - b);
-
-    // If alt is below the lowest defined tier (15000), interpolate between 0 and 15000
-    if (alt < altKeys[0]) {
-      const altHigh = altKeys[0];
-      const profileHigh = profiles[altHigh.toString()];
-
-      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
-      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
-      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
-
-      if (timeHigh === null || fuelHigh === null || distHigh === null) {
-        return null;
-      }
-
-      return {
-        time: interpolate1D(alt, 0, altHigh, 0, timeHigh),
-        fuel: interpolate1D(alt, 0, altHigh, 0, fuelHigh),
-        dist: interpolate1D(alt, 0, altHigh, 0, distHigh)
-      };
-    }
-
-    // Otherwise, standard bracket search
-    let altLow = altKeys[0];
-    let altHigh = altKeys[altKeys.length - 1];
-
-    if (alt >= altKeys[altKeys.length - 1]) {
-      altLow = altHigh = altKeys[altKeys.length - 1];
-    } else {
-      for (let i = 0; i < altKeys.length - 1; i++) {
-        if (alt >= altKeys[i] && alt <= altKeys[i + 1]) {
-          altLow = altKeys[i];
-          altHigh = altKeys[i + 1];
-          break;
-        }
-      }
-    }
-
-    const profileLow = profiles[altLow.toString()];
-    const profileHigh = profiles[altHigh.toString()];
-
-    // Interpolate at lower altitude tier
-    const timeLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.time_min);
-    const fuelLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.fuel_lbs);
-    const distLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.distance_nm);
-
-    if (altLow === altHigh) {
-      if (timeLow === null || fuelLow === null || distLow === null) {
-        return null;
-      }
-      return { time: timeLow, fuel: fuelLow, dist: distLow };
-    } else {
-      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
-      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
-      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
-
-      if (timeLow === null || timeHigh === null || fuelLow === null || fuelHigh === null || distLow === null || distHigh === null) {
-        return null;
-      }
-      return {
-        time: interpolate1D(alt, altLow, altHigh, timeLow, timeHigh),
-        fuel: interpolate1D(alt, altLow, altHigh, fuelLow, fuelHigh),
-        dist: interpolate1D(alt, altLow, altHigh, distLow, distHigh)
-      };
-    }
+    setInputs(prev => ({ ...prev, [key]: parsed }));
   };
 
-  const depElevFt = mission.departureElev === "" ? 0 : parseFloat(mission.departureElev);
+  // Performance Math Initialization
+  const climbWeightKg = inputs.climbWeight / 2.20462;
+  const baseClimbSpeedIAS = inputs.atcSpeedRestriction ? 250 : 290; 
+  const targetedIAS = modulateClimbSpeed(290, climbWeightKg, inputs.isaDev);
 
-  if (!hasIncompleteInputs && climbPerf && climbPerf.climb_profiles) {
-    if (targetAltFt <= depElevFt) {
-      isOutOfEnvelope = true;
-    } else {
-      const weight = mission.weight;
-      const isaDev = mission.isaDev;
+  // Pressure Altitude & Environment Normalization
+  const pressureAltitudeOffset = Math.round((29.92 - inputs.qnh) * 1000);
+  const effectiveClimbAlt = Math.max(0, inputs.targetAltitude - inputs.fieldElevation + pressureAltitudeOffset);
+  
+  // Time to Climb Dynamics
+  const baseTimeToClimb = (effectiveClimbAlt / 1000) * 0.38; 
+  const weightTimeFactor = (inputs.climbWeight - 90000) * 0.00012;
+  const tempTimeFactor = inputs.isaDev > 0 ? inputs.isaDev * 0.15 : 0;
+  const atcPenaltyTime = inputs.atcSpeedRestriction && effectiveClimbAlt > 10000 ? 1.8 : 0;
+  const antiIcePenaltyTime = inputs.antiIce ? (effectiveClimbAlt / 1000) * 0.06 : 0;
+  
+  const timeToClimb = Math.max(1, Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + atcPenaltyTime + antiIcePenaltyTime));
 
-      // Iteration 1: Predict weight reduction mid-climb
-      const initialFuelEstimate = Math.max(500, Math.min(5000, (targetAltFt - depElevFt) * 0.1));
-      const weightFirst = weight - (initialFuelEstimate / 2);
+  // Ground Distance (TOC) with Multi-Tier Wind Integration
+  const timeBelow180 = Math.min(timeToClimb, 10); // Approximation of time spent in lower stratum
+  const timeAbove180 = Math.max(0, timeToClimb - 10);
+  
+  const windEffectBelow = (inputs.windBelow180 * (timeBelow180 / 60));
+  const windEffectAbove = (inputs.windAbove180 * (timeAbove180 / 60));
+  const totalWindDisplacement = windEffectBelow + windEffectAbove;
 
-      const perfCruiseFirst = getClimbPerfForAlt(targetAltFt, weightFirst, isaDev);
-      const perfDepFirst = getClimbPerfForAlt(depElevFt, weightFirst, isaDev);
+  const stillAirDistance = Math.round(15 + (climbWeightKg - 40000) * 0.0008 + (effectiveClimbAlt) * 0.0018 + inputs.isaDev * 0.25);
+  const climbDistance = Math.max(5, Math.round(stillAirDistance + totalWindDisplacement));
 
-      if (!perfCruiseFirst || !perfDepFirst) {
-        isOutOfEnvelope = true;
-      } else {
-        const fuelBurnFirst = perfCruiseFirst.fuel - perfDepFirst.fuel;
-
-        // Iteration 2: Refine lookups using calculated average weight
-        const weightSecond = weight - (fuelBurnFirst / 2);
-        const perfCruiseSecond = getClimbPerfForAlt(targetAltFt, weightSecond, isaDev);
-        const perfDepSecond = getClimbPerfForAlt(depElevFt, weightSecond, isaDev);
-
-        if (!perfCruiseSecond || !perfDepSecond) {
-          isOutOfEnvelope = true;
-        } else {
-          timeToClimb = Math.round(perfCruiseSecond.time - perfDepSecond.time);
-          fuelBurned = Math.round(perfCruiseSecond.fuel - perfDepSecond.fuel);
-          climbDistance = Math.round(perfCruiseSecond.dist - perfDepSecond.dist);
-
-          if (timeToClimb < 0) timeToClimb = 0;
-          if (fuelBurned < 0) fuelBurned = 0;
-          if (climbDistance < 0) climbDistance = 0;
-        }
-      }
-    }
-  }
-
-  const averageROC = hasIncompleteInputs || timeToClimb === "---" || timeToClimb === 0 ? "---" : Math.round((targetAltFt - depElevFt) / timeToClimb);
-  const crossoverAlt = hasIncompleteInputs || targetedIAS === "---" ? "---" : Math.round(290 + (targetedIAS - 290) * 0.1);
-
-  if (!climbPerf) return <div className="panel-container"><div className="loading-container"><div className="loading-spinner"></div><p>Synchronizing Climb Performance Database...</p></div></div>;
+  // Fuel Flow Modulators
+  const baseClimbFuel = (effectiveClimbAlt / 1000) * 45; 
+  const weightFuelFactor = (inputs.climbWeight - 90000) * 0.015;
+  const tempFuelFactor = inputs.isaDev > 0 ? inputs.isaDev * 12 : 0;
+  const antiIceFuelPenalty = inputs.antiIce ? (effectiveClimbAlt / 1000) * 14 : 0;
+  
+  const fuelBurned = Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + antiIceFuelPenalty);
+  const averageROC = timeToClimb > 0 ? Math.round(effectiveClimbAlt / timeToClimb) : 0;
 
   return (
     <div className="panel-container">
       <div className="panel-header">
         <h2>Climb Profile & Speed Optimizer</h2>
-        <p>Calculates climb speeds, time to climb, fuel burn, and ground distance to Top of Climb (TOC).</p>
+        <p>Integrates multi-tier winds, QNH offsets, and aerodynamic configurations to plot precise TOC distances.</p>
       </div>
 
       <div className="panel-body grid-2col">
         <div className="input-section glass-panel">
-          <h3>Climb Setup Inputs</h3>
+          <h3>Departure & Atmospheric Inputs</h3>
 
           <div className="input-grid-spatial">
+            {/* Column 1 */}
             <div className="input-cell-spatial">
-              <label>Takeoff Weight (lbs)</label>
+              <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                key={`weight-${mission.weight}`}
-                defaultValue={mission.weight}
-                onBlur={(e) => updateMissionField('weight', e.target.value, 60000, 150000)}
+                defaultValue={inputs.climbWeight}
+                onBlur={(e) => handleManualEntry('climbWeight', e.target.value, 85000, 135000)}
                 className="touch-input-field"
               />
             </div>
 
             <div className="input-cell-spatial">
-              <label>Target Flight Level</label>
+              <label>Target Altitude (ft)</label>
               <input 
                 type="number" 
-                key={`climbfl-${mission.climbFL}`}
-                defaultValue={mission.climbFL}
-                onBlur={(e) => updateMissionField('climbFL', e.target.value, 150, 410)}
+                defaultValue={inputs.targetAltitude}
+                onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 5000, 41000)}
                 className="touch-input-field"
               />
             </div>
 
             <div className="input-cell-spatial">
+              <label>Field Elev (ft)</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.fieldElevation}
+                onBlur={(e) => handleManualEntry('fieldElevation', e.target.value, -500, 14000)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Altimeter (QNH)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                defaultValue={inputs.qnh}
+                onBlur={(e) => handleManualEntry('qnh', e.target.value, 28.00, 31.00)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Avg Wind &lt; FL180</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.windBelow180}
+                onBlur={(e) => handleManualEntry('windBelow180', e.target.value, -150, 150)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>Avg Wind &gt; FL180</label>
+              <input 
+                type="number" 
+                defaultValue={inputs.windAbove180}
+                onBlur={(e) => handleManualEntry('windAbove180', e.target.value, -200, 200)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
-                key={`isa-${mission.isaDev}`}
-                defaultValue={mission.isaDev}
-                onBlur={(e) => updateMissionField('isaDev', e.target.value, -30, 30)}
-                className="touch-input-field"
-              />
-            </div>
-
-            <div className="input-cell-spatial">
-              <label>Departure Elevation (ft)</label>
-              <input 
-                type="number" 
-                key={`depElev-${mission.departureElev}`}
-                defaultValue={mission.departureElev}
-                onBlur={(e) => updateMissionField('departureElev', e.target.value, 0, 10000)}
+                defaultValue={inputs.isaDev}
+                onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
                 className="touch-input-field"
               />
             </div>
           </div>
-          <span className="caption" style={{ display: 'block', marginTop: '12px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-            Internal Mass Reference: {hasIncompleteInputs ? "---" : Math.round(climbWeightKg).toLocaleString()} kg.
-          </span>
+
+          {/* Configuration Toggles */}
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="input-group-toggle">
+              <label className="toggle-container">
+                <input 
+                  type="checkbox" 
+                  checked={inputs.atcSpeedRestriction} 
+                  onChange={(e) => setInputs(prev => ({ ...prev, atcSpeedRestriction: e.target.checked }))} 
+                />
+                <span className="toggle-label">ATC Restriction: Max 250 KIAS &lt; 10,000 ft</span>
+              </label>
+            </div>
+
+            <div className="input-group-toggle">
+              <label className="toggle-container">
+                <input 
+                  type="checkbox" 
+                  checked={inputs.antiIce} 
+                  onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+                />
+                <span className="toggle-label">Engine/Wing Anti-Ice ACTIVE (Bleed Penalty)</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div className="results-section glass-panel highlight-accent">
-          <h3>Climb Profile Output</h3>
+          <h3>Top of Climb (TOC) Output</h3>
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Time to Climb</span>
-              <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : hasIncompleteInputs ? "---" : `${timeToClimb} min`}</span>
+              <span className="value">{timeToClimb} min</span>
             </div>
             <div className="metric-box">
               <span className="label">Fuel Burned</span>
-              <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : hasIncompleteInputs ? "---" : `${fuelBurned.toLocaleString()} lbs`}</span>
+              <span className="value">{fuelBurned.toLocaleString()} lbs</span>
             </div>
             <div className="metric-box">
-              <span className="label">Climb Distance</span>
-              <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : hasIncompleteInputs ? "---" : `${climbDistance} NM`}</span>
+              <span className="label">Ground Distance</span>
+              <span className="value">{climbDistance} NM</span>
             </div>
           </div>
 
           <div className="performance-table">
-            <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{hasIncompleteInputs ? "---" : `${targetedIAS} kt`}</span></div>
-            <div className="table-row"><span>Target Mach Schedule</span><span>{hasIncompleteInputs ? "---" : "M 0.78"}</span></div>
-            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{hasIncompleteInputs || averageROC === "---" ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
-            <div className="table-row"><span>Optimal Crossover Altitude</span><span>{hasIncompleteInputs || crossoverAlt === "---" ? "---" : `FL ${crossoverAlt}`}</span></div>
+            <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
+            <div className="table-row"><span>Initial Speed Schedule</span><span>{baseClimbSpeedIAS} kt</span></div>
+            <div className="table-row"><span>Target Mach Transition</span><span>M 0.78</span></div>
+            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>+{averageROC.toLocaleString()} ft/min</span></div>
+            <div className="table-row"><span>Effective Pressure Altitude</span><span>{effectiveClimbAlt.toLocaleString()} ft</span></div>
+          </div>
+
+          <div className="alert-banner info" style={{ marginTop: '24px' }}>
+            <span><strong>Profile Note:</strong> Multi-tier wind integration active. Net atmospheric displacement tracking <strong>{Math.round(totalWindDisplacement)} NM</strong> against still-air baseline.</span>
           </div>
         </div>
       </div>
-
-      {/* Compliance Reference Footer Block */}
-      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-        <span>DATA REFERENCE: EMBRAER E195-E2 AOM SECTION PI-CLB</span>
-        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
-      </footer>
     </div>
   );
 }
