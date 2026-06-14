@@ -6,9 +6,9 @@ import L from 'leaflet';
 if (L && L.Icon && L.Icon.Default) {
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconRetinaUrl: '/images/marker-icon-2x.png',
+    iconUrl: '/images/marker-icon.png',
+    shadowUrl: '/images/marker-shadow.png',
   });
 }
 
@@ -22,6 +22,10 @@ export default function FlightMap() {
   const mapRef = useRef(null);
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
+  const navLogRef = useRef([]);
+
+  // Keep ref in sync
+  useEffect(() => { navLogRef.current = navLog; }, [navLog]);
 
   const parseFlightRoute = (currentInput = mission.routeString) => {
     if (!navDb || !navDb.waypoints) return;
@@ -36,19 +40,19 @@ export default function FlightMap() {
         resolvedCoords.push([fix.lat, fix.lon]);
         
         // Look up existing matching waypoint log entry to preserve entered data
-        const existing = navLog.find((item, idx) => item.ident === ident && idx === index) || 
-                         navLog.find(item => item.ident === ident);
+        const existing = navLogRef.current.find((item, idx) => item.ident === ident && idx === index) || 
+                         navLogRef.current.find(item => item.ident === ident);
 
         initializedLog.push({
           ident,
           type: fix.type,
           lat: fix.lat,
           lon: fix.lon,
-          wind: existing ? existing.wind : 0,
-          fl: existing ? existing.fl : mission.cruiseFL,
-          sat: existing ? existing.sat : -45,
-          plannedFuel: existing ? existing.plannedFuel : 5000,
-          actualFuel: existing ? existing.actualFuel : 5000
+          wind: existing ? existing.wind : '',
+          fl: existing ? existing.fl : '',
+          sat: existing ? existing.sat : '',
+          plannedFuel: existing ? existing.plannedFuel : '',
+          actualFuel: existing ? existing.actualFuel : ''
         });
       }
     });
@@ -59,6 +63,7 @@ export default function FlightMap() {
 
   useEffect(() => {
     if (navDb) parseFlightRoute();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navDb, mission.routeString]);
 
   // Leaflet Map Initialization Hook (waits until loading is done so mapContainerRef exists in DOM)
@@ -158,7 +163,14 @@ export default function FlightMap() {
     });
   };
 
-  if (loading) return <div className="panel-container"><p>Synchronizing Navigation Databases...</p></div>;
+  if (loading) return (
+    <div className="panel-container">
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Synchronizing Navigation Databases...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="panel-container">
@@ -221,7 +233,9 @@ export default function FlightMap() {
             </thead>
             <tbody>
               {navLog.map((row, idx) => {
-                const fuelDelta = row.actualFuel - row.plannedFuel;
+                const hasPlanned = row.plannedFuel !== '' && row.plannedFuel !== undefined;
+                const hasActual = row.actualFuel !== '' && row.actualFuel !== undefined;
+                const fuelDelta = hasPlanned && hasActual ? row.actualFuel - row.plannedFuel : null;
                 return (
                   <tr key={`${row.ident}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td style={{ padding: '14px 12px', textAlign: 'left', fontWeight: '700', fontSize: '16px' }}>
@@ -274,7 +288,9 @@ export default function FlightMap() {
                       />
                     </td>
                     <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '700', fontFamily: 'monospace', fontSize: '15px' }}>
-                      {fuelDelta > 0 ? (
+                      {fuelDelta === null ? (
+                        <span style={{ color: 'rgba(255,255,255,0.25)' }}>—</span>
+                      ) : fuelDelta > 0 ? (
                         <span style={{ color: '#39ff14' }}>+{fuelDelta.toLocaleString()} lbs</span>
                       ) : fuelDelta < 0 ? (
                         <span style={{ color: '#ff4a4a' }}>{fuelDelta.toLocaleString()} lbs</span>

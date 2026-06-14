@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathoptix-v4';
+const CACHE_NAME = 'pathoptix-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,7 +8,6 @@ const ASSETS_TO_CACHE = [
   '/data/descent_fpa.json',
   '/data/holding_endurance.json',
   '/data/driftdown_oei.json',
-  '/data/nav_db.json',
   '/images/marker-icon.png',
   '/images/marker-icon-2x.png',
   '/images/marker-shadow.png'
@@ -52,8 +51,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Stale-while-revalidate for large data files
+  if (event.request.url.includes('/data/nav_db.json')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache => 
+        cache.match(event.request).then(cachedResponse => {
+          const fetchPromise = fetch(event.request).then(networkResponse => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          }).catch(() => cachedResponse);
+          return cachedResponse || fetchPromise;
+        })
+      )
+    );
+    return;
+  }
+
+  // Cache-first for everything else
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) return cachedResponse;
       return fetch(event.request);
     })

@@ -64,7 +64,21 @@ export default function CalculatorCruise() {
   const specificRange = hasIncompleteInputs || fuelFlowLbs === 0 || tas === "---" ? "---" : Math.round((gs / fuelFlowLbs) * 1000) / 1000;
   const optimalFL = hasIncompleteInputs ? "---" : Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
 
-  if (loading) return <div className="panel-container"><p>Synchronizing Cruise Performance Database...</p></div>;
+  // --- Trip Planning Calculations ---
+  const hasTripDistance = mission.tripDistance !== "" && mission.tripDistance > 0;
+  const hasPlannedFuel = mission.plannedFuelBurn !== "" && mission.plannedFuelBurn > 0;
+  const canCalcTrip = !hasIncompleteInputs && hasTripDistance && gs !== "---" && gs > 0 && fuelFlowLbs !== "---" && fuelFlowLbs > 0;
+
+  const eteHours = canCalcTrip ? mission.tripDistance / gs : 0;
+  const eteMinTotal = canCalcTrip ? Math.round(eteHours * 60) : 0;
+  const eteH = Math.floor(eteMinTotal / 60);
+  const eteM = eteMinTotal % 60;
+  const eteFormatted = canCalcTrip ? `${eteH}:${eteM.toString().padStart(2, '0')}` : "---";
+
+  const calcFuelRequired = canCalcTrip ? Math.round(fuelFlowLbs * eteHours) : 0;
+  const fuelVariance = canCalcTrip && hasPlannedFuel ? Math.round(mission.plannedFuelBurn - calcFuelRequired) : null;
+
+  if (loading) return <div className="panel-container"><div className="loading-container"><div className="loading-spinner"></div><p>Synchronizing Cruise Performance Database...</p></div></div>;
 
   return (
     <div className="panel-container">
@@ -99,7 +113,7 @@ export default function CalculatorCruise() {
                 type="number" 
                 key={`weight-${mission.weight}`}
                 defaultValue={mission.weight}
-                onBlur={(e) => updateMissionField('weight', e.target.value, 85000, 130000)}
+                onBlur={(e) => updateMissionField('weight', e.target.value, 60000, 150000)}
                 className="touch-input-field"
               />
             </div>
@@ -214,6 +228,66 @@ export default function CalculatorCruise() {
             <div className="table-row"><span>Max Operating Altitude</span><span>{hasIncompleteInputs ? "---" : `FL ${maxOperatingFL}`}</span></div>
           </div>
         </div>
+      </div>
+
+      {/* Trip Planning & Fuel Burn Section */}
+      <div className="glass-panel" style={{ marginTop: '24px' }}>
+        <h3>Trip Planning & Fuel Burn</h3>
+        <div className="input-grid-spatial">
+          <div className="input-cell-spatial">
+            <label>Trip Distance (NM)</label>
+            <input 
+              type="number" 
+              key={`dist-${mission.tripDistance}`}
+              defaultValue={mission.tripDistance}
+              onBlur={(e) => updateMissionField('tripDistance', e.target.value, 0, 9999)}
+              className="touch-input-field"
+            />
+          </div>
+          <div className="input-cell-spatial">
+            <label>Planned Fuel Burn (lbs)</label>
+            <input 
+              type="number" 
+              key={`pfb-${mission.plannedFuelBurn}`}
+              defaultValue={mission.plannedFuelBurn}
+              onBlur={(e) => updateMissionField('plannedFuelBurn', e.target.value, 0, 50000)}
+              className="touch-input-field"
+            />
+          </div>
+        </div>
+
+        {(hasTripDistance || hasPlannedFuel) && (
+          <div style={{ marginTop: '20px' }}>
+            <div className="metrics-summary">
+              <div className="metric-box">
+                <span className="label">Est. Time Enroute</span>
+                <span className="value">{canCalcTrip ? eteFormatted : "---"}</span>
+              </div>
+              <div className="metric-box">
+                <span className="label">Calc. Fuel Required</span>
+                <span className="value">{canCalcTrip ? `${calcFuelRequired.toLocaleString()} lbs` : "---"}</span>
+              </div>
+              <div className="metric-box">
+                <span className="label">Fuel Variance</span>
+                <span className="value" style={{ 
+                  color: fuelVariance === null ? 'var(--accent-cyan)' 
+                    : fuelVariance >= 0 ? 'var(--accent-green)' 
+                    : 'var(--accent-crit)' 
+                }}>
+                  {fuelVariance === null ? "---" 
+                    : fuelVariance >= 0 ? `+${fuelVariance.toLocaleString()} lbs` 
+                    : `${fuelVariance.toLocaleString()} lbs`}
+                </span>
+              </div>
+            </div>
+
+            {fuelVariance !== null && fuelVariance < 0 && (
+              <div className="alert-banner danger" style={{ marginTop: '12px' }}>
+                ⚠️ FUEL SHORTFALL — Calculated burn exceeds planned fuel by {Math.abs(fuelVariance).toLocaleString()} lbs. Verify dispatch figures.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Compliance Reference Footer Block */}

@@ -20,25 +20,32 @@ export function MissionProvider({ children }) {
     fpa: '',
     manualMach: '',
     speedMode: 'ECON',
-    wind: ''
+    wind: '',
+    tripDistance: '',
+    plannedFuelBurn: '',
+    climbFL: '',
+    departureElev: ''
   });
 
-  const [airportDb, setAirportDb] = useState(null);
   const [navDb, setNavDb] = useState(null);
   const [cruiseMatrix, setCruiseMatrix] = useState(null);
+  const [climbPerf, setClimbPerf] = useState(null);
+  const [descentPerf, setDescentPerf] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Parallel asynchronous database initialization
   useEffect(() => {
     Promise.all([
-      fetch('/data/airport_db.json').then(res => res.json()),
       fetch('/data/nav_db.json').then(res => res.json()),
-      fetch('/data/cruise_econ.json').then(res => res.json())
+      fetch('/data/cruise_econ.json').then(res => res.json()),
+      fetch('/data/climb_perf.json').then(res => res.json()),
+      fetch('/data/descent_fpa.json').then(res => res.json())
     ])
-    .then(([airports, navs, cruise]) => {
-      setAirportDb(airports);
+    .then(([navs, cruise, climb, descent]) => {
       setNavDb(navs);
       setCruiseMatrix(cruise);
+      setClimbPerf(climb);
+      setDescentPerf(descent);
       setLoading(false);
     })
     .catch(err => {
@@ -54,8 +61,8 @@ export function MissionProvider({ children }) {
         return { ...prev, [key]: "" };
       }
 
-      if (['weight', 'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 'descentSpeed', 'fpa', 'manualMach', 'wind'].includes(key)) {
-        updatedVal = ['fpa', 'manualMach'].includes(key) ? parseFloat(value) : parseInt(value, 10);
+      if (['weight', 'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 'climbFL', 'departureElev'].includes(key)) {
+        updatedVal = ['fpa', 'manualMach', 'weight', 'tripDistance', 'plannedFuelBurn'].includes(key) ? parseFloat(value) : parseInt(value, 10);
         if (isNaN(updatedVal)) return prev; // Keep old value if invalid/empty input on blur
         
         if (min !== undefined && updatedVal < min) updatedVal = min;
@@ -78,7 +85,7 @@ export function MissionProvider({ children }) {
   }, [mission.weight, mission.cruiseFL, maxOperatingFL]);
 
   return (
-    <MissionContext.Provider value={{ mission, updateMissionField, airportDb, navDb, cruiseMatrix, maxOperatingFL, loading }}>
+    <MissionContext.Provider value={{ mission, updateMissionField, navDb, cruiseMatrix, climbPerf, descentPerf, maxOperatingFL, loading }}>
       {children}
     </MissionContext.Provider>
   );
