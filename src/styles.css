@@ -30,7 +30,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
   background-color: var(--bg-app);
   color: var(--text-primary);
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
@@ -38,7 +39,8 @@ body {
 /* Sidebar Split View Layout */
 .efb-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-app);
   overflow: hidden;
   width: 100vw;
@@ -173,6 +175,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth momentum scrolling on iOS/iPadOS */
   position: relative;
 }
 
