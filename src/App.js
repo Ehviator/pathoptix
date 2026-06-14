@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Dashboard from './components/Dashboard';
 import CalculatorClimb from './components/CalculatorClimb';
 import CalculatorCruise from './components/CalculatorCruise';
 import CalculatorDescent from './components/CalculatorDescent';
@@ -6,7 +7,7 @@ import FlightMap from './components/FlightMap';
 import 'leaflet/dist/leaflet.css';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('cruise');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -24,6 +25,8 @@ export default function App() {
 
   const renderActiveComponent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard />;
       case 'climb':
         return <CalculatorClimb />;
       case 'cruise':
@@ -33,7 +36,7 @@ export default function App() {
       case 'map':
         return <FlightMap />;
       default:
-        return <CalculatorCruise />;
+        return <Dashboard />;
     }
   };
 
@@ -58,6 +61,12 @@ export default function App() {
 
       <main className="app-content">
         <nav className="nav-tabs body-nav-tier">
+          <button 
+            className={`nav-tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            📊 Operations Dashboard
+          </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'climb' ? 'active' : ''}`}
             onClick={() => setActiveTab('climb')}
@@ -90,7 +99,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Tactical EFB Flight Deck Tool • Embraer E195-E2 PW1900G • Version 1.1.0</p>
+        <p>Tactical EFB Flight Deck Tool • Embraer E195-E2 PW1900G • Version 1.3.0</p>
       </footer>
     </div>
   );

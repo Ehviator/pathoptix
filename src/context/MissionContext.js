@@ -8,7 +8,11 @@ export function MissionProvider({ children }) {
   const [mission, setMission] = useState({
     departure: '',
     arrival: '',
-    weight: '', 
+    zeroFuelWeight: 95000, 
+    blockFuel: 15000,
+    taxiFuel: 300,
+    alternateFuel: 2500,
+    finalReserveFuel: 2200,
     costIndex: '',
     isaDev: '',
     cruiseFL: '',
@@ -138,6 +142,16 @@ export function MissionProvider({ children }) {
     }
   }, [navDb, mission.routeString, mission.cruiseFL]);
 
+  // Operations Math and Legal Fuel Calculations
+  const takeoffWeight = (mission.zeroFuelWeight || 0) + (mission.blockFuel || 0) - (mission.taxiFuel || 0);
+  const minimumDiversionFuel = (mission.alternateFuel || 0) + (mission.finalReserveFuel || 0);
+
+  // Wrap mission with calculated takeoffWeight to prevent breaking downstream performance equations
+  const missionWithWeight = {
+    ...mission,
+    weight: takeoffWeight
+  };
+
   const updateMissionField = (key, value, min, max) => {
     setMission(prev => {
       let updatedVal = value;
@@ -145,8 +159,15 @@ export function MissionProvider({ children }) {
         return { ...prev, [key]: "" };
       }
 
-      if (['weight', 'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 'climbFL', 'departureElev'].includes(key)) {
-        updatedVal = ['fpa', 'manualMach', 'weight', 'tripDistance', 'plannedFuelBurn'].includes(key) ? parseFloat(value) : parseInt(value, 10);
+      const numericKeys = [
+        'zeroFuelWeight', 'blockFuel', 'taxiFuel', 'alternateFuel', 'finalReserveFuel',
+        'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 
+        'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 
+        'climbFL', 'departureElev'
+      ];
+
+      if (numericKeys.includes(key)) {
+        updatedVal = ['fpa', 'manualMach', 'tripDistance', 'plannedFuelBurn'].includes(key) ? parseFloat(value) : parseInt(value, 10);
         if (isNaN(updatedVal)) return prev;
         
         if (min !== undefined && updatedVal < min) updatedVal = min;
@@ -183,21 +204,21 @@ export function MissionProvider({ children }) {
     });
   };
 
-  const maxOperatingFL = getLegalMaxAltitude(mission.weight || 0);
+  const maxOperatingFL = getLegalMaxAltitude(takeoffWeight || 0);
 
   // Enforce boundary guardrails automatically when state changes
   useEffect(() => {
-    if (mission.weight !== "" && mission.cruiseFL !== "") {
-      const maxFL = getLegalMaxAltitude(mission.weight);
+    if (takeoffWeight !== 0 && mission.cruiseFL !== "") {
+      const maxFL = getLegalMaxAltitude(takeoffWeight);
       if (mission.cruiseFL > maxFL) {
         setMission(prev => ({ ...prev, cruiseFL: maxFL }));
       }
     }
-  }, [mission.weight, mission.cruiseFL, maxOperatingFL]);
+  }, [takeoffWeight, mission.cruiseFL, maxOperatingFL]);
 
   return (
     <MissionContext.Provider value={{ 
-      mission, 
+      mission: missionWithWeight, 
       updateMissionField, 
       navDb, 
       cruiseMatrix, 
@@ -207,7 +228,9 @@ export function MissionProvider({ children }) {
       loading,
       navLog,
       totalDistance,
-      updateNavLogField
+      updateNavLogField,
+      takeoffWeight,
+      minimumDiversionFuel
     }}>
       {children}
     </MissionContext.Provider>

@@ -32,7 +32,7 @@ function MapRefocus({ coords }) {
 }
 
 export default function FlightMap() {
-  const { mission, updateMissionField, loading, navLog, totalDistance, updateNavLogField } = useMission();
+  const { mission, updateMissionField, loading, navLog, totalDistance, updateNavLogField, minimumDiversionFuel } = useMission();
 
   // Derive active map polyline coordinates dynamically from the global navLog waypoints
   const activeCoords = navLog.map(wp => [wp.lat, wp.lon]);
@@ -108,6 +108,12 @@ export default function FlightMap() {
                 const legTimeMin = row.gs > 0 ? (row.legDistance / row.gs) * 60 : 0;
                 const timeFormatted = row.legDistance === 0 ? "00:00" : `${Math.floor(legTimeMin).toString().padStart(2, '0')}:${Math.round((legTimeMin % 1) * 60).toString().padStart(2, '0')}`;
 
+                // Projected destination landing fuel and Minimum Diversion Fuel (MDF) legality check
+                const plannedDestFuel = navLog[navLog.length - 1].plannedFuel;
+                const remainingPlannedBurn = row.plannedFuel - plannedDestFuel;
+                const projectedFuelAtDestination = row.actualFuel - remainingPlannedBurn;
+                const isFuelIllegal = projectedFuelAtDestination < minimumDiversionFuel;
+
                 return (
                   <tr key={`${row.ident}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: '700', fontSize: '15px' }}>
@@ -136,13 +142,31 @@ export default function FlightMap() {
                       <input type="number" defaultValue={row.plannedFuel} onBlur={(e) => updateNavLogField(idx, 'plannedFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
                       <input type="number" defaultValue={row.actualFuel} onBlur={(e) => updateNavLogField(idx, 'actualFuel', e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px', color: '#fff', textAlign: 'center', width: '70px' }} />
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '700', fontFamily: 'monospace', fontSize: '14px' }}>
-                      {fuelDelta > 0 ? <span style={{ color: '#39ff14' }}>+{fuelDelta}</span> : fuelDelta < 0 ? <span style={{ color: '#ff4a4a' }}>{fuelDelta}</span> : <span style={{ color: 'rgba(255,255,255,0.4)' }}>OK</span>}
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '700', fontFamily: 'monospace', fontSize: '13px' }}>
+                      {isFuelIllegal ? (
+                        <span style={{ color: 'var(--accent-crit)', fontWeight: 'bold' }}>DIVERT / MIN FUEL</span>
+                      ) : fuelDelta > 0 ? (
+                        <span style={{ color: '#39ff14' }}>+{fuelDelta}</span>
+                      ) : fuelDelta < 0 ? (
+                        <span style={{ color: '#ff4a4a' }}>{fuelDelta}</span>
+                      ) : (
+                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>OK</span>
+                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '2px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                <td colSpan="8" style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>
+                  REGULATORY OPERATIONAL FUEL MINIMUMS (TC / PART 121)
+                </td>
+                <td style={{ padding: '12px', textAlign: 'right', fontWeight: '700', color: 'var(--accent-warn)', fontSize: '14px', fontFamily: 'monospace' }}>
+                  MDF: {minimumDiversionFuel.toLocaleString()} lbs
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
