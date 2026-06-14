@@ -189,7 +189,6 @@ export default function Dashboard() {
                 defaultValue={mission.departure}
                 onBlur={(e) => updateMissionField('departure', e.target.value.toUpperCase())}
                 className="touch-input-field"
-                placeholder="ICAO"
                 style={{ textTransform: 'uppercase' }}
               />
             </div>
@@ -202,7 +201,6 @@ export default function Dashboard() {
                 defaultValue={mission.arrival}
                 onBlur={(e) => updateMissionField('arrival', e.target.value.toUpperCase())}
                 className="touch-input-field"
-                placeholder="ICAO"
                 style={{ textTransform: 'uppercase' }}
               />
             </div>
@@ -215,7 +213,6 @@ export default function Dashboard() {
                 defaultValue={mission.alternate}
                 onBlur={(e) => updateMissionField('alternate', e.target.value.toUpperCase())}
                 className="touch-input-field"
-                placeholder="ICAO"
                 style={{ textTransform: 'uppercase' }}
               />
             </div>
@@ -239,7 +236,6 @@ export default function Dashboard() {
                 defaultValue={mission.flightNumber}
                 onBlur={(e) => updateMissionField('flightNumber', e.target.value.toUpperCase())}
                 className="touch-input-field"
-                placeholder="e.g. POE297"
                 style={{ textTransform: 'uppercase' }}
               />
             </div>
@@ -252,7 +248,6 @@ export default function Dashboard() {
                 defaultValue={mission.pax}
                 onBlur={(e) => updateMissionField('pax', e.target.value, 0, 150)}
                 className="touch-input-field"
-                placeholder="0"
               />
             </div>
 
@@ -265,7 +260,6 @@ export default function Dashboard() {
                 onBlur={(e) => updateMissionField('mac', e.target.value, 0, 50)}
                 step="0.1"
                 className="touch-input-field"
-                placeholder="26.0"
               />
             </div>
 
@@ -277,7 +271,6 @@ export default function Dashboard() {
                 defaultValue={mission.averageWindDir}
                 onBlur={(e) => updateMissionField('averageWindDir', e.target.value, 0, 360)}
                 className="touch-input-field"
-                placeholder="279"
               />
             </div>
 
@@ -289,7 +282,6 @@ export default function Dashboard() {
                 defaultValue={mission.averageWindSpeed}
                 onBlur={(e) => updateMissionField('averageWindSpeed', e.target.value, 0, 150)}
                 className="touch-input-field"
-                placeholder="47"
               />
             </div>
 
@@ -301,7 +293,6 @@ export default function Dashboard() {
                 defaultValue={mission.routeString}
                 onBlur={(e) => updateMissionField('routeString', e.target.value.toUpperCase())}
                 className="touch-input-field"
-                placeholder="e.g. CYOW CYMX CYYQ CYYT"
                 style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
               />
             </div>
