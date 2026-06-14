@@ -12,6 +12,29 @@ export default function EmergencySuite() {
     setInputs(prev => ({ ...prev, [key]: val }));
   };
 
+  // OEI (One Engine Inoperative) Ceiling calculation
+  const baseCeiling = 28500; // Standard OEI ceiling at 40,000 kg
+  const weightPenalty = (inputs.cruiseWeight - 40000) * 0.38;
+  const tempPenalty = inputs.oatDev * 180;
+  const antiIcePenalty = inputs.antiIce ? 1200 : 0;
+  
+  const oeiCeiling = Math.max(10000, Math.round(baseCeiling - weightPenalty - tempPenalty - antiIcePenalty));
+  const oeiFL = Math.floor(oeiCeiling / 100);
+
+  // Driftdown Speed (Green Dot)
+  const driftdownSpeed = Math.round(198 + (inputs.cruiseWeight - 40000) * 0.0014 + inputs.oatDev * 0.2);
+
+  // Clearance Margin over terrain
+  const clearanceMargin = oeiCeiling - inputs.selectedTerrainAlt;
+
+  // Driftdown Distance & Time to level-off
+  const driftdownDistance = Math.round(58 + (inputs.cruiseWeight - 40000) * 0.0012 + inputs.oatDev * 0.4);
+  const driftdownTimeMin = 13.5 + (inputs.cruiseWeight - 40000) * 0.0003 + inputs.oatDev * 0.08;
+  const driftdownTime = `${Math.floor(driftdownTimeMin)}:${Math.round((driftdownTimeMin % 1) * 60).toString().padStart(2, '0')} min`;
+
+  // Level-off Fuel Flow (OEI) - Single Engine fuel flow in kg/h
+  const oeiFuelFlow = Math.round(920 + (inputs.cruiseWeight - 40000) * 0.015 + inputs.oatDev * 5);
+
   return (
     <div className="panel-container">
       <div className="panel-header warning-theme">
@@ -79,30 +102,32 @@ export default function EmergencySuite() {
           <div className="metrics-summary">
             <div className="metric-box warning-metric">
               <span className="label">OEI Net Ceiling</span>
-              <span className="value">FL 215</span>
+              <span className="value">FL {oeiFL}</span>
             </div>
             <div className="metric-box warning-metric">
               <span className="label">Driftdown Speed</span>
-              <span className="value">218 kt</span>
+              <span className="value">{driftdownSpeed} kt</span>
             </div>
             <div className="metric-box warning-metric">
               <span className="label">Clearance Margin</span>
-              <span className="value">+13,500 ft</span>
+              <span className={`value ${clearanceMargin < 2000 ? 'text-danger' : ''}`}>
+                {clearanceMargin > 0 ? `+${clearanceMargin.toLocaleString()}` : clearanceMargin.toLocaleString()} ft
+              </span>
             </div>
           </div>
 
           <div className="performance-table">
             <div className="table-row">
               <span>Driftdown Distance to Level-off</span>
-              <span className="val highlight">76 NM</span>
+              <span className="val highlight">{driftdownDistance} NM</span>
             </div>
             <div className="table-row">
               <span>Driftdown Time to Level-off</span>
-              <span>18:30 min</span>
+              <span>{driftdownTime}</span>
             </div>
             <div className="table-row">
               <span>Level-off Fuel Flow (OEI)</span>
-              <span>1,220 kg/h</span>
+              <span>{oeiFuelFlow} kg/h</span>
             </div>
             <div className="table-row">
               <span>Anti-Ice Ceiling Penalty</span>
@@ -110,9 +135,19 @@ export default function EmergencySuite() {
             </div>
           </div>
 
-          <div className="alert-banner danger">
-            <strong>CRITICAL:</strong> Terrain Clearance margin is <strong>SAFE</strong>. Net ceiling of FL215 exceeds the local terrain constraint of {inputs.selectedTerrainAlt} ft by 13,500 ft. Maintain driftdown speed of 218 kt (Green Dot).
-          </div>
+          {clearanceMargin < 0 ? (
+            <div className="alert-banner danger">
+              <strong>CRITICAL:</strong> Terrain Clearance margin is **UNSAFE** ({clearanceMargin.toLocaleString()} ft). Driftdown level-off ceiling (FL {oeiFL}) is below the local terrain limit of {inputs.selectedTerrainAlt.toLocaleString()} ft. Plan escape route immediately!
+            </div>
+          ) : clearanceMargin < 2000 ? (
+            <div className="alert-banner warning">
+              <strong>Caution:</strong> Terrain clearance margin is narrow (+{clearanceMargin.toLocaleString()} ft). Maintain exact Green Dot driftdown speed ({driftdownSpeed} kt) to maximize flight path angle.
+            </div>
+          ) : (
+            <div className="alert-banner info">
+              <strong>OEI clearance margin:</strong> Terrain clearance is **SAFE**. Net OEI ceiling of {oeiCeiling.toLocaleString()} ft exceeds the local terrain constraint of {inputs.selectedTerrainAlt.toLocaleString()} ft by {clearanceMargin.toLocaleString()} ft.
+            </div>
+          )}
         </div>
       </div>
     </div>

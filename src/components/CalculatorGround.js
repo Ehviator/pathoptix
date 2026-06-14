@@ -13,6 +13,46 @@ export default function CalculatorGround() {
     setInputs(prev => ({ ...prev, [key]: val }));
   };
 
+  // V-speeds calculations
+  const baseV2 = 132;
+  const weightV2Shift = (inputs.tow - 40000) * 0.00065;
+  const tempV2Shift = inputs.oat * 0.12;
+  const altV2Shift = (inputs.altitude / 1000) * 0.35;
+  
+  const v2 = Math.round(baseV2 + weightV2Shift + tempV2Shift + altV2Shift);
+  const vr = Math.round(v2 - 4 - (inputs.wind * 0.05));
+  
+  const runwayFactorV1 = inputs.runwayCondition === 'wet' ? 5 : inputs.runwayCondition === 'contaminated' ? 12 : 0;
+  const v1 = Math.round(vr - 3 - runwayFactorV1);
+
+  // Required Runway Length calculation
+  const baseLength = 1380;
+  const weightLengthFactor = (inputs.tow - 40000) * 0.038;
+  const tempLengthFactor = Math.max(0, inputs.oat - 15) * 14;
+  const altLengthFactor = (inputs.altitude / 1000) * 85;
+  const windLengthFactor = inputs.wind * 9; // headwind reduces runway length, tailwind increases it (since wind range goes from tailwind negative to headwind positive)
+  
+  const runwayMultiplier = inputs.runwayCondition === 'wet' ? 1.22 : inputs.runwayCondition === 'contaminated' ? 1.58 : 1.0;
+  
+  const requiredRunway = Math.round((baseLength + weightLengthFactor + tempLengthFactor + altLengthFactor - windLengthFactor) * runwayMultiplier);
+
+  // Maximum allowed TOW based on temperature and altitude constraints
+  const structuralMTOW = 61500;
+  const tempLimitMTOW = Math.max(0, inputs.oat - 30) * 350;
+  const altLimitMTOW = (inputs.altitude / 1000) * 750;
+  const maxAllowedTOW = Math.round(structuralMTOW - tempLimitMTOW - altLimitMTOW);
+
+  // Thrust Mode determination
+  let thrustMode = "TO-1 (100% Full Thrust)";
+  if (requiredRunway < 1500 && inputs.tow < 46000) {
+    thrustMode = "TO-3 (Flex Derate 15%)";
+  } else if (requiredRunway < 1850 && inputs.tow < 52000) {
+    thrustMode = "TO-2 (Flex Derate 10%)";
+  }
+
+  // Safety V50 screen speed
+  const v50 = Math.round(v2 + 8);
+
   return (
     <div className="panel-container">
       <div className="panel-header">
@@ -36,7 +76,7 @@ export default function CalculatorGround() {
           </div>
 
           <div className="input-group">
-            <label>Pressure Altitude: {inputs.altitude} ft</label>
+            <label>Pressure Altitude: {inputs.altitude.toLocaleString()} ft</label>
             <input 
               type="range" 
               min="0" 
@@ -68,7 +108,7 @@ export default function CalculatorGround() {
               value={inputs.wind} 
               onChange={(e) => handleInputChange('wind', parseInt(e.target.value))} 
             />
-            <span className="caption">Negative values represent tailwind.</span>
+            <span className="caption">Positive values represent headwind, negative represent tailwind.</span>
           </div>
 
           <div className="input-group">
@@ -96,40 +136,50 @@ export default function CalculatorGround() {
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">V1 (Decision)</span>
-              <span className="value">138 kt</span>
+              <span className="value">{v1} kt</span>
             </div>
             <div className="metric-box">
               <span className="label">VR (Rotate)</span>
-              <span className="value">141 kt</span>
+              <span className="value">{vr} kt</span>
             </div>
             <div className="metric-box">
               <span className="label">V2 (Safety)</span>
-              <span className="value">146 kt</span>
+              <span className="value">{v2} kt</span>
             </div>
           </div>
 
           <div className="performance-table">
             <div className="table-row">
               <span>Required Runway Length</span>
-              <span className="val highlight">1,780 m</span>
+              <span className="val highlight">{requiredRunway.toLocaleString()} m</span>
             </div>
             <div className="table-row">
               <span>Thrust Mode / Rating</span>
-              <span>TO-1 (100% Full Thrust)</span>
+              <span>{thrustMode}</span>
             </div>
             <div className="table-row">
               <span>Maximum Allowed TOW</span>
-              <span>61,500 kg (Structural Limited)</span>
+              <span>{maxAllowedTOW.toLocaleString()} kg</span>
             </div>
             <div className="table-row">
               <span>V50 (Screen Height Speed)</span>
-              <span>154 kt</span>
+              <span>{v50} kt</span>
             </div>
           </div>
 
-          <div className="alert-banner warning">
-            <strong>Notice:</strong> High OAT or high pressure altitude will degrade climb gradients. Verify double-engine drift-down margins.
-          </div>
+          {inputs.tow > maxAllowedTOW ? (
+            <div className="alert-banner danger">
+              <strong>CRITICAL:</strong> Take-off weight ({inputs.tow.toLocaleString()} kg) exceeds the maximum allowed climb/field limit of {maxAllowedTOW.toLocaleString()} kg. Reduce payload or wait for lower temperature.
+            </div>
+          ) : inputs.oat > 35 || inputs.altitude > 4000 ? (
+            <div className="alert-banner warning">
+              <strong>Caution:</strong> High temperature or high altitude airfield detected. Climb gradients will be degraded. Double-check OEI level-off ceiling.
+            </div>
+          ) : (
+            <div className="alert-banner info">
+              <strong>Runway margin:</strong> Ground parameters are within normal E195-E2 envelopes. Flex thrust is recommended to extend PW1900G engine hot-section life.
+            </div>
+          )}
         </div>
       </div>
     </div>
