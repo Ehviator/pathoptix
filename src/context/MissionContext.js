@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getLegalMaxAltitude } from '../engine/interpolation.js';
 import { calculateDistanceNM, estimateTAS } from '../engine/kinematics.js';
+import { fetchAirportWeather } from '../services/awcApi.js';
 
 const MissionContext = createContext(null);
 
@@ -8,6 +9,7 @@ export function MissionProvider({ children }) {
   const [mission, setMission] = useState({
     departure: '',
     arrival: '',
+    alternate: '',
     zeroFuelWeight: 95000, 
     blockFuel: 15000,
     taxiFuel: 300,
@@ -29,7 +31,11 @@ export function MissionProvider({ children }) {
     tripDistance: '',
     plannedFuelBurn: '',
     climbFL: '',
-    departureElev: ''
+    departureElev: '',
+    departureQnh: 29.92,
+    arrivalQnh: 29.92,
+    arrivalElev: '',
+    arrivalOat: ''
   });
 
   const [navDb, setNavDb] = useState(null);
@@ -41,6 +47,13 @@ export function MissionProvider({ children }) {
   // Global Flight Log and Distance States
   const [navLog, setNavLog] = useState([]);
   const [totalDistance, setTotalDistance] = useState(0);
+
+  // Global Weather State
+  const [weather, setWeather] = useState({
+    departure: null,
+    arrival: null,
+    alternate: null
+  });
 
   // Parallel asynchronous database initialization
   useEffect(() => {
@@ -139,8 +152,88 @@ export function MissionProvider({ children }) {
       const { newLog, newDistance } = parseFlightRoute(mission.routeString, navLogRef.current, navDb, mission.cruiseFL);
       setNavLog(newLog);
       setTotalDistance(newDistance);
+
+      // Auto-extract departure and arrival from routeString
+      const elements = mission.routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
+      if (elements.length >= 2) {
+        const dep = elements[0];
+        const arr = elements[elements.length - 1];
+        setMission(prev => {
+          if (prev.departure !== dep || prev.arrival !== arr) {
+            return { ...prev, departure: dep, arrival: arr };
+          }
+          return prev;
+        });
+      }
     }
   }, [navDb, mission.routeString, mission.cruiseFL]);
+
+  // Fetch airport weather when departure or arrival change
+  useEffect(() => {
+    let active = true;
+
+    async function fetchWeather() {
+      const depCode = mission.departure;
+      const arrCode = mission.arrival;
+      const altCode = mission.alternate;
+
+      if (!depCode && !arrCode && !altCode) {
+        if (active) {
+          setWeather({ departure: null, arrival: null, alternate: null });
+        }
+        return;
+      }
+
+      // Concurrently fetch weather for departure, arrival, and alternate
+      const [depWeather, arrWeather, altWeather] = await Promise.all([
+        depCode ? fetchAirportWeather(depCode) : Promise.resolve(null),
+        arrCode ? fetchAirportWeather(arrCode) : Promise.resolve(null),
+        altCode ? fetchAirportWeather(altCode) : Promise.resolve(null)
+      ]);
+
+      if (!active) return;
+
+      setWeather({
+        departure: depWeather,
+        arrival: arrWeather,
+        alternate: altWeather
+      });
+
+      // Dispatch updates to mission context state
+      setMission(prev => {
+        const updates = {};
+
+        if (depWeather && depWeather.status === 'OK') {
+          updates.departureQnh = depWeather.altimeter;
+          updates.departureElev = depWeather.elevation;
+          
+          if (depWeather.temperature !== null && depWeather.temperature !== undefined) {
+            // Calculate ISA Deviation at field: OAT - Standard Temperature
+            // Standard Temperature = 15 - 1.98 * (elevation / 1000)
+            const stdTemp = 15.0 - 1.98 * (depWeather.elevation / 1000.0);
+            updates.isaDev = Math.round(depWeather.temperature - stdTemp);
+          }
+        }
+
+        if (arrWeather && arrWeather.status === 'OK') {
+          updates.arrivalQnh = arrWeather.altimeter;
+          updates.arrivalElev = arrWeather.elevation;
+          updates.arrivalOat = arrWeather.temperature;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          return { ...prev, ...updates };
+        }
+        return prev;
+      });
+    }
+
+    fetchWeather();
+
+    return () => {
+      active = false;
+    };
+  }, [mission.departure, mission.arrival, mission.alternate]);
 
   // Operations Math and Legal Fuel Calculations
   const takeoffWeight = (mission.zeroFuelWeight || 0) + (mission.blockFuel || 0) - (mission.taxiFuel || 0);
@@ -163,11 +256,11 @@ export function MissionProvider({ children }) {
         'zeroFuelWeight', 'blockFuel', 'taxiFuel', 'alternateFuel', 'finalReserveFuel',
         'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 
         'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 
-        'climbFL', 'departureElev'
+        'climbFL', 'departureElev', 'departureQnh', 'arrivalQnh', 'arrivalElev', 'arrivalOat'
       ];
 
       if (numericKeys.includes(key)) {
-        updatedVal = ['fpa', 'manualMach', 'tripDistance', 'plannedFuelBurn'].includes(key) ? parseFloat(value) : parseInt(value, 10);
+        updatedVal = ['fpa', 'manualMach', 'tripDistance', 'plannedFuelBurn', 'departureQnh', 'arrivalQnh'].includes(key) ? parseFloat(value) : parseInt(value, 10);
         if (isNaN(updatedVal)) return prev;
         
         if (min !== undefined && updatedVal < min) updatedVal = min;
@@ -230,7 +323,8 @@ export function MissionProvider({ children }) {
       totalDistance,
       updateNavLogField,
       takeoffWeight,
-      minimumDiversionFuel
+      minimumDiversionFuel,
+      weather
     }}>
       {children}
     </MissionContext.Provider>

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
 import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
 import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
 
 export default function CalculatorClimb() {
-  const { climbPerf, loading } = useMission();
+  const { mission, climbPerf, loading } = useMission();
 
   const [inputs, setInputs] = useState({
     climbWeight: 115000, 
@@ -18,6 +18,17 @@ export default function CalculatorClimb() {
     antiIce: false,
     atcSpeedRestriction: true // 250kt below 10,000 ft limit
   });
+
+  // Automatically sync with global mission context updates (weather ingestion & weights)
+  useEffect(() => {
+    setInputs(prev => ({
+      ...prev,
+      climbWeight: mission.weight ? mission.weight : prev.climbWeight,
+      isaDev: mission.isaDev !== '' ? mission.isaDev : prev.isaDev,
+      fieldElevation: mission.departureElev !== '' ? mission.departureElev : prev.fieldElevation,
+      qnh: mission.departureQnh !== undefined && mission.departureQnh !== '' ? mission.departureQnh : prev.qnh
+    }));
+  }, [mission.weight, mission.isaDev, mission.departureElev, mission.departureQnh]);
 
   const handleManualEntry = (key, value, min, max) => {
     let parsed = key === 'qnh' ? parseFloat(value) : parseInt(value, 10);

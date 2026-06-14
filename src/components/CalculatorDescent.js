@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
 import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
 import { calculateColdTempCorrection } from '../engine/atmospheric.js';
@@ -18,6 +18,16 @@ export default function CalculatorDescent() {
     descentWind: 15, // Average wind component during the descent phase
     flightIdleIcing: false
   });
+
+  // Automatically sync with global mission context updates (weather ingestion)
+  useEffect(() => {
+    setInputs(prev => ({
+      ...prev,
+      fieldElevation: mission.arrivalElev !== '' ? mission.arrivalElev : prev.fieldElevation,
+      arrivalQnh: mission.arrivalQnh !== undefined && mission.arrivalQnh !== '' ? mission.arrivalQnh : prev.arrivalQnh,
+      destinationOAT: mission.arrivalOat !== undefined && mission.arrivalOat !== '' ? mission.arrivalOat : prev.destinationOAT
+    }));
+  }, [mission.arrivalElev, mission.arrivalQnh, mission.arrivalOat]);
 
   const handleManualEntry = (key, value, min, max) => {
     let parsed = key === 'fpa' || key === 'arrivalQnh' || key === 'destinationOAT' ? parseFloat(value) : parseInt(value, 10);
