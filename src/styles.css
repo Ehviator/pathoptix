@@ -507,3 +507,128 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Tactile Cockpit Inputs */
+.input-group-tactile {
+  margin-bottom: 1.5rem;
+}
+
+.input-group-tactile label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tactile-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.25rem;
+  max-width: 320px;
+}
+
+.btn-step {
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-color);
+  color: var(--color-primary);
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.btn-step:hover {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+.btn-step:active {
+  transform: scale(0.95);
+  background: rgba(0, 229, 255, 0.2);
+}
+
+.input-display {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  width: 80px;
+  -moz-appearance: textfield;
+}
+
+.input-display::-webkit-outer-spin-button,
+.input-display::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.value-display {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.caption-limit {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-warning);
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+}
+
+/* Toggle Checkbox Switch */
+.input-group-toggle {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-main);
+}
+

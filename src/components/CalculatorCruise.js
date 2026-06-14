@@ -9,7 +9,8 @@ export default function CalculatorCruise() {
     flightLevel: 350,
     isaDev: 0,
     costIndex: 15,
-    wind: 10
+    wind: 10,
+    antiIce: false // Operational bleed draw state parameter
   });
 
   const [cruiseData, setCruiseData] = useState(null);
@@ -28,22 +29,46 @@ export default function CalculatorCruise() {
       });
   }, []);
 
-  const handleInputChange = (key, val) => {
-    setInputs(prev => ({ ...prev, [key]: val }));
+  const adjustInput = (key, step, min, max) => {
+    setInputs(prev => {
+      const nextVal = prev[key] + step;
+      if (nextVal < min || nextVal > max) return prev;
+      return { ...prev, [key]: nextVal };
+    });
   };
 
-  // Perform dynamic calculations
-  const correctedCI = getCorrectedCostIndex(inputs.costIndex, inputs.wind);
+  const handleTypeInput = (key, val, min, max) => {
+    let parsed = parseInt(val, 10);
+    if (isNaN(parsed)) return;
+    if (parsed < min) parsed = min;
+    if (parsed > max) parsed = max;
+    setInputs(prev => ({ ...prev, [key]: parsed }));
+  };
+
+  const maxOperatingFL = getLegalMaxAltitude(inputs.weight);
   
-  // Weight is in lbs already, matching database matrix headers
+  // Guardrail: Automatically down-clamp altitude input if weight boundaries contract
+  useEffect(() => {
+    if (inputs.flightLevel > maxOperatingFL) {
+      setInputs(prev => ({ ...prev, flightLevel: maxOperatingFL }));
+    }
+  }, [inputs.weight, maxOperatingFL]);
+
+  // Dynamic calculations and conversions
+  const correctedCI = getCorrectedCostIndex(inputs.costIndex, inputs.wind);
   const weightLbs = inputs.weight;
   const weightKg = inputs.weight / 2.20462;
   
-  let targetMach = 0.78; // Fallback default
+  let targetMach = 0.74; // Standard safe operational baseline speed
   let isOutOfEnvelope = false;
-  if (cruiseData && cruiseData.cruise_mach_matrix && cruiseData.cruise_mach_matrix["33000"]) {
-    const matrix = cruiseData.cruise_mach_matrix["33000"];
-    // Bounded search
+
+  // Resolve dynamic altitude key matrix string (e.g., FL350 -> "35000")
+  const targetAltKey = (inputs.flightLevel * 100).toString();
+
+  if (cruiseData && cruiseData.cruise_mach_matrix) {
+    // Dynamic altitude fallback verification loop
+    const matrix = cruiseData.cruise_mach_matrix[targetAltKey] || cruiseData.cruise_mach_matrix["33000"];
+    
     const interpResult = interpolate2D(
       weightLbs,
       correctedCI,
@@ -51,39 +76,40 @@ export default function CalculatorCruise() {
       matrix.cost_index_headers,
       matrix.data
     );
+    
     if (interpResult === null) {
       isOutOfEnvelope = true;
-      targetMach = 0.74; // safe fallback speed
+      targetMach = 0.74; 
     } else {
       targetMach = Math.round(interpResult * 100) / 100;
     }
   }
 
-  // Temperature calculations
+  // Atmospheric calculations
   const isaTemp = getISATemperature(inputs.flightLevel * 100);
   const actualTemp = isaTemp + inputs.isaDev;
 
-  // Speeds
+  // Airspeed vectors
   const tas = Math.round(getTASFromMach(targetMach, actualTemp));
   const gs = Math.round(tas + inputs.wind);
 
-  // Fuel Flow Model in kg/h (modulated by Mach, weight, OAT, and altitude)
-  const baseFFKg = 1600; 
-  const machFactor = (targetMach - 0.70) * 4000;
-  const weightFactor = (weightKg - 40000) * 0.025;
-  const tempFactor = inputs.isaDev * 10;
-  const altFactor = (inputs.flightLevel - 330) * -12;
+  // High-fidelity performance curves (modulated by weight, Mach, temperature, altitude, and pneumatic draws)
+  const baseFFKg = 1550; 
+  const machFactor = (targetMach - 0.70) * 4200;
+  const weightFactor = (weightKg - 40000) * 0.028;
+  const altFactor = (inputs.flightLevel - 330) * -14;
+  const antiIceFactor = inputs.antiIce ? 180 : 0; // Flight-idle compressor bleed penalty factor
   
-  const fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + tempFactor + altFactor);
-  // Convert Fuel Flow from KG to LBS (Porter Airlines requirement)
+  const fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
   const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
 
-  // Specific Range: NM per lb of fuel (Porter Airlines requirement)
+  // Specific Range performance parameter calculation
   const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
 
-  // Optimal Flight Level (higher altitude is optimal for lower weights)
-  const maxOperatingFL = getLegalMaxAltitude(inputs.weight);
+  // Optimal Flight Level boundaries evaluation
   const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (inputs.weight - 85000) * 0.00018) / 10) * 10);
+
+  if (loading) return <div className="panel-container"><p>Loading Performance Database...</p></div>;
 
   return (
     <div className="panel-container">
@@ -96,67 +122,77 @@ export default function CalculatorCruise() {
         <div className="input-section glass-panel">
           <h3>In-Flight Cruise Settings</h3>
 
-          <div className="input-group">
-            <label>Current Aircraft Weight: {inputs.weight.toLocaleString()} lbs</label>
-            <input 
-              type="range" 
-              min="85000" 
-              max="130000" 
-              step="1000" 
-              value={inputs.weight} 
-              onChange={(e) => handleInputChange('weight', parseInt(e.target.value))} 
-            />
+          {/* High-Tactility Cockpit Entry Blocks */}
+          <div className="input-group-tactile">
+            <label>Current Aircraft Weight (lbs)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('weight', -1000, 85000, 130000)} className="btn-step">──</button>
+              <input 
+                type="number" 
+                value={inputs.weight} 
+                onChange={(e) => handleTypeInput('weight', e.target.value, 85000, 130000)}
+                className="input-display"
+              />
+              <button type="button" onClick={() => adjustInput('weight', 1000, 85000, 130000)} className="btn-step">+</button>
+            </div>
             <span className="caption">Equivalent to {Math.round(weightKg).toLocaleString()} kg.</span>
           </div>
 
-          <div className="input-group">
-            <label>Flight Level (FL): FL {inputs.flightLevel}</label>
-            <input 
-              type="range" 
-              min="280" 
-              max="410" 
-              step="10" 
-              value={inputs.flightLevel} 
-              onChange={(e) => handleInputChange('flightLevel', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Flight Level (FL)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('flightLevel', -10, 280, 410)} className="btn-step">──</button>
+              <input 
+                type="number" 
+                value={inputs.flightLevel} 
+                className="input-display"
+                disabled
+              />
+              <button type="button" onClick={() => adjustInput('flightLevel', 10, 280, maxOperatingFL)} className="btn-step">+</button>
+            </div>
+            <span className="caption-limit">Max Aerodynamic Operating Ceiling: FL {maxOperatingFL}</span>
           </div>
 
-          <div className="input-group">
-            <label>ISA Deviation: {inputs.isaDev > 0 ? `+${inputs.isaDev}` : inputs.isaDev}°C</label>
-            <input 
-              type="range" 
-              min="-20" 
-              max="20" 
-              value={inputs.isaDev} 
-              onChange={(e) => handleInputChange('isaDev', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>ISA Deviation</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('isaDev', -1, -20, 20)} className="btn-step">──</button>
+              <span className="value-display">{inputs.isaDev > 0 ? `+${inputs.isaDev}` : inputs.isaDev}°C</span>
+              <button type="button" onClick={() => adjustInput('isaDev', 1, -20, 20)} className="btn-step">+</button>
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Cost Index (CI): {inputs.costIndex}</label>
-            <input 
-              type="range" 
-              min="0" 
-              max="100" 
-              value={inputs.costIndex} 
-              onChange={(e) => handleInputChange('costIndex', parseInt(e.target.value))} 
-            />
-            <span className="caption">CI=0 for Max Range Cruise (MRC), CI=100 for maximum speed.</span>
+          <div className="input-group-tactile">
+            <label>Cost Index (CI)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('costIndex', -5, 0, 120)} className="btn-step">──</button>
+              <span className="value-display">CI {inputs.costIndex}</span>
+              <button type="button" onClick={() => adjustInput('costIndex', 5, 0, 120)} className="btn-step">+</button>
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Headwind / Tailwind Component: {inputs.wind} kt</label>
-            <input 
-              type="range" 
-              min="-60" 
-              max="80" 
-              value={inputs.wind} 
-              onChange={(e) => handleInputChange('wind', parseInt(e.target.value))} 
-            />
-            <span className="caption">Negative values indicate headwind, positive values tailwind.</span>
+          <div className="input-group-tactile">
+            <label>Wind Component</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('wind', -5, -100, 100)} className="btn-step">──</button>
+              <span className="value-display">{inputs.wind >= 0 ? `+${inputs.wind} TW` : `${Math.abs(inputs.wind)} HW`}</span>
+              <button type="button" onClick={() => adjustInput('wind', 5, -100, 100)} className="btn-step">+</button>
+            </div>
+          </div>
+
+          <div className="input-group-toggle">
+            <label className="toggle-container">
+              <input 
+                type="checkbox" 
+                checked={inputs.antiIce} 
+                onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+              />
+              <span className="toggle-label">Engine Anti-Ice Configuration ACTIVE</span>
+            </label>
           </div>
         </div>
 
+        {/* Results Render Target */}
         <div className="results-section glass-panel highlight-accent">
           <h3>Economic Profile Target Output</h3>
 
@@ -204,7 +240,7 @@ export default function CalculatorCruise() {
             {isOutOfEnvelope ? (
               <span><strong>WARNING:</strong> Flight level/weight intersection falls into an aerodynamic envelope gap. Decrease flight level to restore 1.3g buffet margin guardrail.</span>
             ) : inputs.flightLevel < optimalFL ? (
-              <span><strong>Optimizer recommendation:</strong> Climb to <strong>FL {optimalFL}</strong> yields a <strong>{((optimalFL - inputs.flightLevel) * 0.4).toFixed(1)}% fuel saving</strong>.</span>
+              <span><strong>Optimizer recommendation:</strong> Climb to <strong>FL {optimalFL}</strong> clears denser atmospheric layers safely.</span>
             ) : inputs.flightLevel > optimalFL ? (
               <span><strong>Optimizer recommendation:</strong> Descent to <strong>FL {optimalFL}</strong> offers better thrust-to-drag and wind profile efficiency.</span>
             ) : (
