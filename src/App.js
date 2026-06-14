@@ -8,6 +8,7 @@ import ReviewWeather from './components/ReviewWeather';
 import ReviewOei from './components/ReviewOei';
 import BriefFlight from './components/BriefFlight';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useMission } from './context/MissionContext.js';
 import 'leaflet/dist/leaflet.css';
 
 
@@ -15,6 +16,19 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('create-flight');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { mission, weather } = useMission();
+
+  const flightActive = !!(mission.departure && mission.arrival && mission.weight >= 50000);
+  const worstCat = [weather.departure, weather.arrival, weather.alternate]
+    .filter(w => w?.status === 'OK')
+    .reduce((worst, w) => {
+      const rank = { VFR: 0, MVFR: 1, IFR: 2, LIFR: 3 };
+      return rank[w.flightCategory] > rank[worst] ? w.flightCategory : worst;
+    }, 'VFR');
+  const weatherBadgeColor = worstCat === 'LIFR' ? '#ff00ff'
+    : worstCat === 'IFR'  ? 'var(--accent-crit)'
+    : worstCat === 'MVFR' ? 'var(--accent-cyan)'
+    : null;
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -95,7 +109,16 @@ export default function App() {
         <div>
           <div className="sidebar-header">
             <div className="sidebar-logo"></div>
-            {!sidebarCollapsed && <span className="sidebar-brand-text">PathOptix</span>}
+            {!sidebarCollapsed && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="sidebar-brand-text">PathOptix</span>
+                {flightActive && (
+                  <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--accent-cyan)', letterSpacing: '0.5px', fontFamily: 'var(--font-mono)' }}>
+                    {mission.departure} → {mission.arrival}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <nav className="sidebar-nav">
@@ -134,12 +157,22 @@ export default function App() {
             >
               <span>📊</span> {!sidebarCollapsed && "Optimize Fuel"}
             </button>
-            <button 
+            <button
               className={`sidebar-btn ${activeTab === 'review-weather' ? 'active' : ''}`}
               onClick={() => setActiveTab('review-weather')}
               title="Review Weather"
+              style={{ position: 'relative' }}
             >
-              <span>🌦️</span> {!sidebarCollapsed && "Review Weather"}
+              <span>🌦️</span>
+              {!sidebarCollapsed && "Review Weather"}
+              {weatherBadgeColor && (
+                <span style={{
+                  position: 'absolute', top: '8px', right: '10px',
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: weatherBadgeColor,
+                  boxShadow: `0 0 6px ${weatherBadgeColor}`,
+                }} />
+              )}
             </button>
             <button 
               className={`sidebar-btn ${activeTab === 'review-oei' ? 'active' : ''}`}

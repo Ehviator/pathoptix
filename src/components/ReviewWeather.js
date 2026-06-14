@@ -4,13 +4,14 @@ import { calculateWindComponents } from '../services/airportService.js';
 import { calculateDriftdownCeiling } from '../engine/kinematics.js';
 
 export default function ReviewWeather() {
-  const { 
-    mission, 
-    weather, 
-    airportDb, 
+  const {
+    mission,
+    weather,
+    airportDb,
     enrichAirport,
     takeoffWeight,
-    driftdownDb
+    driftdownDb,
+    refreshWeather,
   } = useMission();
 
   // Landing Fuel margin calculation
@@ -131,10 +132,14 @@ export default function ReviewWeather() {
   };
   const sigWxAdvisories = getSigWxAdvisories();
 
-  const getMetarAgeStr = (obsTime) => {
-    if (!obsTime) return '---';
+  const getMetarAge = (obsTime) => {
+    if (!obsTime) return { label: '---', color: 'var(--text-secondary)' };
     const ageMins = Math.floor((Date.now() / 1000 - obsTime) / 60);
-    return ageMins <= 0 ? 'Just now' : `${ageMins}m ago`;
+    const label = ageMins <= 0 ? 'Just now' : `${ageMins}m ago`;
+    const color = ageMins > 90 ? 'var(--accent-crit)'
+      : ageMins > 30 ? 'var(--accent-warn)'
+      : 'var(--accent-green)';
+    return { label, color };
   };
 
   const getCategoryStyle = (cat) => {
@@ -196,9 +201,17 @@ export default function ReviewWeather() {
 
   return (
     <div className="panel-container">
-      <div className="panel-header">
-        <h2>🌤️ Review Meteorological & Environmental Conditions</h2>
-        <p>Monitor raw METAR updates, airport elevations, runway wind vectors, and icing conditions.</p>
+      <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2>🌤️ Review Meteorological & Environmental Conditions</h2>
+          <p>Monitor raw METAR updates, airport elevations, runway wind vectors, and icing conditions.</p>
+        </div>
+        <button
+          onClick={refreshWeather}
+          style={{ padding: '10px 18px', background: 'rgba(0, 212, 255, 0.12)', border: '1px solid var(--accent-cyan)', borderRadius: '8px', color: 'var(--accent-cyan)', cursor: 'pointer', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}
+        >
+          ↻ Refresh METARs
+        </button>
       </div>
 
       {isIcingRisk && (
@@ -287,10 +300,12 @@ export default function ReviewWeather() {
                     </div>
                   )}
 
+                  {(() => { const age = getMetarAge(weather.departure.obsTime); return (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '14px', fontSize: '11px', color: 'var(--text-secondary)' }}>
                     <span>Field Elevation: <strong>{weather.departure.elevation} ft</strong></span>
-                    <span>Data Age: <strong>{getMetarAgeStr(weather.departure.obsTime)}</strong></span>
+                    <span>Data Age: <strong style={{ color: age.color }}>{age.label}</strong></span>
                   </div>
+                  ); })()}
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-crit)', fontSize: '13px', background: 'rgba(255,74,74,0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,74,74,0.1)' }}>
@@ -375,10 +390,12 @@ export default function ReviewWeather() {
                     </div>
                   )}
 
+                  {(() => { const age = getMetarAge(weather.arrival.obsTime); return (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '14px', fontSize: '11px', color: 'var(--text-secondary)' }}>
                     <span>Field Elevation: <strong>{weather.arrival.elevation} ft</strong></span>
-                    <span>Data Age: <strong>{getMetarAgeStr(weather.arrival.obsTime)}</strong></span>
+                    <span>Data Age: <strong style={{ color: age.color }}>{age.label}</strong></span>
                   </div>
+                  ); })()}
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-crit)', fontSize: '13px', background: 'rgba(255,74,74,0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,74,74,0.1)' }}>
@@ -463,10 +480,12 @@ export default function ReviewWeather() {
                     </div>
                   )}
 
+                  {(() => { const age = getMetarAge(weather.alternate.obsTime); return (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '14px', fontSize: '11px', color: 'var(--text-secondary)' }}>
                     <span>Field Elevation: <strong>{weather.alternate.elevation} ft</strong></span>
-                    <span>Data Age: <strong>{getMetarAgeStr(weather.alternate.obsTime)}</strong></span>
+                    <span>Data Age: <strong style={{ color: age.color }}>{age.label}</strong></span>
                   </div>
+                  ); })()}
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-crit)', fontSize: '13px', background: 'rgba(255,74,74,0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,74,74,0.1)' }}>

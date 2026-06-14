@@ -222,6 +222,9 @@ export function MissionProvider({ children }) {
   // All databases come from DatabaseContext — stable references that never
   // change after initial load, so MissionContext state changes do not
   // cascade re-renders into database-consuming components.
+  const [weatherRefreshToken, setWeatherRefreshToken] = useState(0);
+  const refreshWeather = () => setWeatherRefreshToken(t => t + 1);
+
   const {
     navDb, cruiseMatrix, climbPerf, descentPerf,
     airwaysDb, driftdownDb, terrainDb, airportDb,
@@ -463,7 +466,7 @@ export function MissionProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [mission.departure, mission.arrival, mission.alternate]);
+  }, [mission.departure, mission.arrival, mission.alternate, weatherRefreshToken]);
 
   // Operations Math and Legal Fuel Calculations
   const takeoffWeight = (mission.zeroFuelWeight || 0) + (mission.blockFuel || 0) - (mission.taxiFuel || 0);
@@ -644,6 +647,7 @@ export function MissionProvider({ children }) {
       isBlockFuelSufficient,
       weightViolations,
       landingWeight,
+      refreshWeather,
       driftdownDb,
       terrainDb
     }}>

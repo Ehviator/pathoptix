@@ -1,19 +1,21 @@
 import React, { useMemo } from 'react';
 import { useMission } from '../context/MissionContext.js';
+import { useDatabase } from '../context/DatabaseContext.js';
 import { calculateWindComponents } from '../services/airportService.js';
-import { getCorrectedCostIndex } from '../engine/dynamicModulators.js';
-import { interpolate2D } from '../engine/interpolation.js';
-import { calculateDriftdownCeiling, calculateDriftdownTrajectory, calculateDistanceNM } from '../engine/kinematics.js';
+import { calculateCruiseFuelFlow, lookupCruiseMach } from '../engine/cruiseEngine.js';
+import { calculateClimbProfile } from '../engine/climbEngine.js';
+import { calculateDescentProfile } from '../engine/descentEngine.js';
+import { calculateDriftdownCeiling, calculateDistanceNM } from '../engine/kinematics.js';
 
 export default function BriefFlight() {
-  const { 
-    mission, 
-    navLog, 
-    totalDistance, 
-    takeoffWeight, 
-    minimumDiversionFuel, 
-    weather, 
-    airportDb, 
+  const {
+    mission,
+    navLog,
+    totalDistance,
+    takeoffWeight,
+    minimumDiversionFuel,
+    weather,
+    airportDb,
     enrichAirport,
     tripFuelCalc,
     contingencyFuelCalc,
@@ -22,10 +24,10 @@ export default function BriefFlight() {
     finalReserveFuelCalc,
     requiredBlockFuel,
     isBlockFuelSufficient,
-    cruiseMatrix,
     driftdownDb,
-    terrainDb
+    terrainDb,
   } = useMission();
+  const { cruiseMatrix, climbPerf, descentPerf } = useDatabase();
 
   const routeBurn = mission.plannedFuelBurn || 0;
   const projectedLandingFuel = (mission.blockFuel || 0) - (mission.taxiFuel || 0) - routeBurn;
@@ -65,59 +67,56 @@ export default function BriefFlight() {
     ? `${Math.floor(totalTimeMins / 60)}h ${String(Math.round(totalTimeMins % 60)).padStart(2, '0')}m` 
     : '---';
 
-  // 4. Performance burn rate
-  const calcBurnRate = () => {
-    if (!mission.cruiseFL || !takeoffWeight) return 0;
-    let resolvedMach = 0.78;
-    if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
-      const targetAltKey = (mission.cruiseFL * 100).toString();
-      const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
-      if (matrix) {
-        const boundedWind = Math.max(-200, Math.min(200, mission.averageWindSpeed || 0));
-        const correctedCI = getCorrectedCostIndex(mission.costIndex || 50, boundedWind);
-        const weightLbs = takeoffWeight || 100000;
-        const interpResult = interpolate2D(
-          weightLbs,
-          correctedCI,
-          matrix.weights,
-          matrix.cost_index_headers,
-          matrix.data
-        );
-        if (interpResult !== null) {
-          resolvedMach = Math.round(interpResult * 100) / 100;
-        }
-      }
-    }
-
-    const weightKg = takeoffWeight / 2.20462;
-    const baseFFKg = 1550; 
-    const machFactor = (resolvedMach - 0.70) * 4200;
-    const weightFactor = (weightKg - 40000) * 0.028;
-    const altFactor = (mission.cruiseFL - 330) * -14;
-    
-    let fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor);
-    const cgMac = mission.mac !== '' && mission.mac !== undefined && mission.mac !== null ? mission.mac : 22.5;
-    const cgModifier = cgMac > 28 ? -0.015 : cgMac < 20 ? 0.015 : 0; 
-    fuelFlowKg = fuelFlowKg * (1 + cgModifier);
-
-    return Math.round(fuelFlowKg * 2.20462);
-  };
-  const burnRate = calcBurnRate();
-
-  const cruiseAlt = (mission.cruiseFL || 350) * 100;
-  const depElev = mission.departureElev || 0;
-  const arrElev = mission.arrivalElev || 0;
-  const fpaAngle = mission.fpa || 3.0;
-
-  // TOC/TOD distance
-  const climbAltDelta = Math.max(0, cruiseAlt - depElev);
-  const climbDistanceEst = Math.round((climbAltDelta / 1000) * 2.5 * (1 + ((takeoffWeight - 100000) / 100000) * 0.2));
-
+  const cruiseAlt    = (mission.cruiseFL || 350) * 100;
+  const depElev      = mission.departureElev || 0;
+  const arrElev      = mission.arrivalElev   || 0;
+  const fpaAngle     = mission.fpa || 3.0;
+  const climbAltDelta   = Math.max(0, cruiseAlt - depElev);
   const descentAltDelta = Math.max(0, cruiseAlt - arrElev);
-  const descentDistanceEst = Math.round((descentAltDelta / 1000) * (3.0 / fpaAngle) * 3);
 
-  let climbDistance = climbDistanceEst;
-  let descentDistance = descentDistanceEst;
+  // 4. Performance burn rate — uses cruiseEngine (matches CalculatorCruise logic)
+  const resolvedMach = lookupCruiseMach(takeoffWeight || 100000, mission.cruiseFL || 350, mission.costIndex || 50, cruiseMatrix) || 0.78;
+  const burnRate = takeoffWeight > 0 && mission.cruiseFL
+    ? calculateCruiseFuelFlow({
+        weightLbs:   takeoffWeight,
+        fl:          mission.cruiseFL,
+        mach:        resolvedMach,
+        isaDev:      mission.isaDev   || 0,
+        antiIce:     mission.antiIce  || false,
+        cgMac:       mission.mac      || 22.5,
+        dragPenalty: 0,
+      })
+    : 0;
+
+  // TOC/TOD distance — uses matrix-backed engines with graceful fallback
+  const climbProfile = calculateClimbProfile({
+    pressureTargetAlt:   cruiseAlt,
+    pressureFieldAlt:    depElev,
+    weightLbs:           takeoffWeight || 100000,
+    isaDev:              mission.isaDev || 0,
+    atcSpeedRestriction: true,
+    antiIce:             mission.antiIce || false,
+    windBelow180:        mission.wind || 0,
+    windAbove180:        mission.wind || 0,
+  }, climbPerf);
+
+  const descentProfile = calculateDescentProfile({
+    fpa:               fpaAngle,
+    altDiff:           descentAltDelta,
+    descentSpeed:      mission.descentSpeed || 280,
+    speedTransitionAlt: 10000,
+    trueTargetAlt:     arrElev,
+    descentWind:       mission.wind || 0,
+    flightIdleIcing:   false,
+    destinationOAT:    weather.arrival?.temperature ?? 15,
+  }, descentPerf);
+
+  // Fallback to linear heuristic if engines return out-of-envelope
+  const climbDistanceFallback   = Math.round((climbAltDelta / 1000) * 2.5 * (1 + ((takeoffWeight - 100000) / 100000) * 0.2));
+  const descentDistanceFallback = Math.round((descentAltDelta / 1000) * (3.0 / fpaAngle) * 3);
+
+  let climbDistance   = (!climbProfile.isOutOfEnvelope   && climbProfile.climbDistance > 0)   ? climbProfile.climbDistance   : climbDistanceFallback;
+  let descentDistance = (!descentProfile.isOutOfEnvelope && descentProfile.todDistance  > 0)   ? descentProfile.todDistance   : descentDistanceFallback;
   if (climbDistance + descentDistance > totalDistance) {
     const ratio = totalDistance / (climbDistance + descentDistance || 1);
     climbDistance = Math.round(climbDistance * ratio);
