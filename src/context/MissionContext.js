@@ -168,6 +168,44 @@ export function MissionProvider({ children }) {
     }
   }, [navDb, mission.routeString, mission.cruiseFL]);
 
+  // Keep routeString synchronized with departure and arrival changes
+  useEffect(() => {
+    setMission(prev => {
+      const dep = prev.departure.toUpperCase().trim();
+      const arr = prev.arrival.toUpperCase().trim();
+
+      if (!dep && !arr) return prev;
+
+      const elements = prev.routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
+      let newElements = [...elements];
+
+      if (newElements.length === 0) {
+        if (dep && arr) {
+          return { ...prev, routeString: `${dep} ${arr}` };
+        } else if (dep) {
+          return { ...prev, routeString: dep };
+        } else if (arr) {
+          return { ...prev, routeString: arr };
+        }
+      } else {
+        if (dep && newElements[0] !== dep) {
+          newElements[0] = dep;
+        }
+        if (arr && newElements.length > 1 && newElements[newElements.length - 1] !== arr) {
+          newElements[newElements.length - 1] = arr;
+        } else if (arr && newElements.length === 1 && newElements[0] !== arr) {
+          newElements.push(arr);
+        }
+
+        const newRoute = newElements.join(' ');
+        if (newRoute !== prev.routeString) {
+          return { ...prev, routeString: newRoute };
+        }
+      }
+      return prev;
+    });
+  }, [mission.departure, mission.arrival]);
+
   // Fetch airport weather when departure or arrival change
   useEffect(() => {
     let active = true;

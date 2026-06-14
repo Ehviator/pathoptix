@@ -177,6 +177,19 @@ export default function Dashboard() {
                 className="touch-input-field"
               />
             </div>
+
+            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
+              <label>Flight Plan String Route</label>
+              <input 
+                type="text" 
+                key={mission.routeString}
+                defaultValue={mission.routeString}
+                onBlur={(e) => updateMissionField('routeString', e.target.value.toUpperCase())}
+                className="touch-input-field"
+                placeholder="e.g. CYOW CYMX CYYQ CYYT"
+                style={{ textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}
+              />
+            </div>
           </div>
         </div>
 
