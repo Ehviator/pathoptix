@@ -5,6 +5,7 @@ import CalculatorCruise from './components/CalculatorCruise';
 import CalculatorDescent from './components/CalculatorDescent';
 import CalculatorHolding from './components/CalculatorHolding';
 import EmergencySuite from './components/EmergencySuite';
+import FlightMap from './components/FlightMap';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('cruise');
@@ -36,6 +37,8 @@ export default function App() {
         return <CalculatorDescent />;
       case 'holding':
         return <CalculatorHolding />;
+      case 'map':
+        return <FlightMap />;
       case 'emergency':
         return <EmergencySuite />;
       default:
@@ -97,6 +100,12 @@ export default function App() {
             onClick={() => setActiveTab('holding')}
           >
             <span className="icon">🔄</span> Terminal Holding
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'map' ? 'active' : ''}`}
+            onClick={() => setActiveTab('map')}
+          >
+            <span className="icon">🗺️</span> Flight Map
           </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'emergency' ? 'active' : ''}`}

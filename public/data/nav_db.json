@@ -1,0 +1,11 @@
+{
+  "database_cycle": "2606",
+  "waypoints": {
+    "SEDAR": { "type": "FIX", "lat": 44.3822, "lon": -77.6253 },
+    "VANKK": { "type": "FIX", "lat": 45.1011, "lon": -76.1204 },
+    "ALB":   { "type": "VOR", "lat": 42.7486, "lon": -73.8303, "freq": "115.30" },
+    "YOW":   { "type": "VOR", "lat": 45.3219, "lon": -75.7386, "freq": "114.60" },
+    "YTZ":   { "type": "NDB", "lat": 43.6275, "lon": -79.3961, "freq": "257" },
+    "YMX":   { "type": "NDB", "lat": 45.6764, "lon": -74.0658, "freq": "341" }
+  }
+}
