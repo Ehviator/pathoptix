@@ -1,16 +1,5 @@
 /**
- * PathOptix - Computational Interpolation Engine
- * Handles multi-dimensional linear and non-linear performance lookup table interpolations.
- */
-
-/**
- * 1D Linear Interpolation
- * @param {number} x - Target x coordinate
- * @param {number} x0 - Lower x boundary
- * @param {number} x1 - Upper x boundary
- * @param {number} y0 - Lower y boundary
- * @param {number} y1 - Upper y boundary
- * @returns {number} Interpolated value
+ * Executes a 1D linear interpolation between two data points.
  */
 export function interpolate1D(x, x0, x1, y0, y1) {
   if (x0 === x1) return y0;
@@ -18,48 +7,52 @@ export function interpolate1D(x, x0, x1, y0, y1) {
 }
 
 /**
- * 2D Bilinear Interpolation
- * @param {number} x - Target x coordinate (e.g. Weight)
- * @param {number} y - Target y coordinate (e.g. Temperature)
- * @param {Array<number>} xRange - [x0, x1]
- * @param {Array<number>} yRange - [y0, y1]
- * @param {Array<Array<number>>} qValues - [[q00, q01], [q10, q11]] (grid values)
- * @returns {number} Interpolated value
+ * Executes a 2D bilinear interpolation across an indexed data matrix.
+ * Used to find target speeds when weight or cost index fall between rows/columns.
  */
-export function interpolate2D(x, y, xRange, yRange, qValues) {
-  const [x0, x1] = xRange;
-  const [y0, y1] = yRange;
-  const [[q00, q01], [q10, q11]] = qValues;
-
-  if (x0 === x1 && y0 === y1) return q00;
-
-  if (x0 === x1) {
-    return interpolate1D(y, y0, y1, q00, q01);
-  }
-  if (y0 === y1) {
-    return interpolate1D(x, x0, x1, q00, q10);
-  }
-
-  const r1 = interpolate1D(x, x0, x1, q00, q10);
-  const r2 = interpolate1D(x, x0, x1, q01, q11);
-
-  return interpolate1D(y, y0, y1, r1, r2);
-}
-
-/**
- * Finds bounding indices in a sorted array
- * @param {number} val - Value to locate
- * @param {Array<number>} arr - Sorted numeric array
- * @returns {Array<number>} [lowerIndex, upperIndex]
- */
-export function findBoundingIndices(val, arr) {
-  if (val <= arr[0]) return [0, 0];
-  if (val >= arr[arr.length - 1]) return [arr.length - 1, arr.length - 1];
-
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (val >= arr[i] && val <= arr[i + 1]) {
-      return [i, i + 1];
+export function interpolate2D(targetRow, targetCol, rowHeaders, colHeaders, dataMatrix) {
+  // 1. Locate bounding row indices
+  let r0 = 0, r1 = 0;
+  if (targetRow <= rowHeaders[0]) {
+    r0 = r1 = 0;
+  } else if (targetRow >= rowHeaders[rowHeaders.length - 1]) {
+    r0 = r1 = rowHeaders.length - 1;
+  } else {
+    for (let i = 0; i < rowHeaders.length - 1; i++) {
+      if (targetRow >= rowHeaders[i] && targetRow <= rowHeaders[i + 1]) {
+        r0 = i;
+        r1 = i + 1;
+        break;
+      }
     }
   }
-  return [0, 0];
+
+  // 2. Locate bounding column indices
+  let c0 = 0, c1 = 0;
+  if (targetCol <= colHeaders[0]) {
+    c0 = c1 = 0;
+  } else if (targetCol >= colHeaders[colHeaders.length - 1]) {
+    c0 = c1 = colHeaders.length - 1;
+  } else {
+    for (let j = 0; j < colHeaders.length - 1; j++) {
+      if (targetCol >= colHeaders[j] && targetCol <= colHeaders[j + 1]) {
+        c0 = j;
+        c1 = j + 1;
+        break;
+      }
+    }
+  }
+
+  // 3. Pull the four bounding matrix values
+  const q00 = dataMatrix[r0][c0];
+  const q01 = dataMatrix[r0][c1];
+  const q10 = dataMatrix[r1][c0];
+  const q11 = dataMatrix[r1][c1];
+
+  // 4. Interpolate columns across bounding rows
+  const r0_interp = interpolate1D(targetCol, colHeaders[c0], colHeaders[c1], q00, q01);
+  const r1_interp = interpolate1D(targetCol, colHeaders[c0], colHeaders[c1], q10, q11);
+
+  // 5. Final interpolation between rows to yield resolved solution
+  return interpolate1D(targetRow, rowHeaders[r0], rowHeaders[r1], r0_interp, r1_interp);
 }
