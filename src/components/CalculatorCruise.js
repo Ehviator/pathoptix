@@ -141,6 +141,7 @@ export default function CalculatorCruise() {
             <div className="input-cell-spatial">
               <label>Flight Level (FL)</label>
               <input 
+                key={inputs.flightLevel}
                 type="number" 
                 defaultValue={inputs.flightLevel}
                 onBlur={(e) => handleManualEntry('flightLevel', e.target.value, 280, maxOperatingFL)}
