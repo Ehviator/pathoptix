@@ -515,3 +515,113 @@ body {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Explicit Map Boundary Fixes preventing layout collapse */
+.map-rendering-container {
+  width: 100%;
+  height: 450px;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #0a0c10 !important;
+}
+
+/* Tactile Navigation Log Layout */
+.navlog-panel {
+  margin-top: 24px;
+  width: 100%;
+}
+
+.navlog-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.navlog-header-row {
+  border-bottom: 2px solid var(--glass-border);
+  text-align: center;
+}
+
+.navlog-header-row th {
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.navlog-body-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.navlog-body-row:hover {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.navlog-body-row td {
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.navlog-fix-ident {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: left !important;
+}
+
+.navlog-fix-type {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+}
+
+/* Dense Table Direct-Entry Touch Fields */
+.navlog-grid-input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  width: 100%;
+  max-width: 90px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.navlog-grid-input:focus {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.03);
+}
+
+.navlog-delta-display {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.delta-plus {
+  color: var(--accent-crit);
+}
+
+.delta-minus {
+  color: var(--accent-cyan);
+}
+
+.delta-on-profile {
+  color: var(--text-secondary);
+}

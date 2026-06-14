@@ -103,10 +103,7 @@ export default function FlightMap() {
 
         {/* Right Side: Map Display View */}
         <div className="results-section glass-panel highlight-accent" style={{ padding: '12px', minHeight: '450px' }}>
-          <div 
-            className="spatial-map-viewport-frame" 
-            style={{ width: '100%', height: '450px', borderRadius: '12px', overflow: 'hidden' }}
-          >
+          <div className="map-rendering-container">
             <MapContainer 
               center={[44.5, -76.5]} 
               zoom={6} 
