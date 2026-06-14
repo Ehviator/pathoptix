@@ -102,10 +102,10 @@ export default function FlightMap() {
         </div>
 
         {/* Right Side: Map Display View */}
-        <div className="results-section glass-panel highlight-accent" style={{ padding: '12px', minHeight: '450px', position: 'relative' }}>
+        <div className="results-section glass-panel highlight-accent" style={{ padding: '12px', minHeight: '450px' }}>
           <div 
             className="spatial-map-viewport-frame" 
-            style={{ width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden', position: 'absolute', top: 0, left: 0 }}
+            style={{ width: '100%', height: '450px', borderRadius: '12px', overflow: 'hidden' }}
           >
             <MapContainer 
               center={[44.5, -76.5]} 
