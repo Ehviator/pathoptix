@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   calculateDistanceNM,
+  machToTAS,
   estimateTAS,
   calculateClimbPerformance,
   calculateDescentPerformance,
@@ -27,6 +28,40 @@ describe('Kinematics Physics Engine Tests', () => {
 
     it('should handle non-numeric parameters gracefully', () => {
       expect(calculateDistanceNM(null, undefined, 45, -75)).toBe(0);
+    });
+  });
+
+  describe('machToTAS (authoritative physics-based TAS)', () => {
+    it('gives ~447 kt for M0.78 at FL350 ISA — within ±5 kt of AFM reference', () => {
+      // ISA at FL350: -54.3°C → SoS ≈ 573.4 kt → TAS = 0.78 × 573.4 = ~447 kt
+      const tas = machToTAS(350, 0.78, 0);
+      expect(tas).toBeGreaterThanOrEqual(442);
+      expect(tas).toBeLessThanOrEqual(452);
+    });
+
+    it('gives ~472 kt for M0.82 at FL350 ISA', () => {
+      const tas = machToTAS(350, 0.82, 0);
+      expect(tas).toBeGreaterThanOrEqual(467);
+      expect(tas).toBeLessThanOrEqual(477);
+    });
+
+    it('warmer ISA deviation increases TAS at the same Mach', () => {
+      const tasIsa = machToTAS(350, 0.78, 0);
+      const tasHot = machToTAS(350, 0.78, 15);
+      expect(tasHot).toBeGreaterThan(tasIsa);
+    });
+
+    it('stratosphere cap: TAS is identical at FL370 and FL410 for the same Mach (isothermal)', () => {
+      // Above tropopause temperature is constant at -56.5°C — TAS should be equal
+      const tas370 = machToTAS(370, 0.78, 0);
+      const tas410 = machToTAS(410, 0.78, 0);
+      expect(tas410).toBe(tas370);
+    });
+
+    it('handles null/undefined inputs without throwing', () => {
+      expect(() => machToTAS(null, null, null)).not.toThrow();
+      const fallback = machToTAS(null, null, null);
+      expect(fallback).toBeGreaterThan(0);
     });
   });
 

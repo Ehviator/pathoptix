@@ -4,6 +4,7 @@
  */
 
 import { getIsaTempDeviationFactor } from './thermodynamics.js';
+import { getISATemperature, getSpeedOfSound } from './atmospheric.js';
 
 /**
  * Calculates the great-circle distance between two coordinates in Nautical Miles using the Haversine formula.
@@ -76,14 +77,32 @@ export function calculateTrackAngle(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Approximates True Airspeed (TAS) in knots for jet cruise.
- * 
- * @param {number} fl - Flight Level (FL)
- * @param {number} sat - Static Air Temperature (SAT) in °C
- * @returns {number} Estimated TAS in knots
+ * Calculates True Airspeed (TAS) from Mach, flight level, and ISA deviation.
+ * This is the authoritative TAS function — uses the full ISA atmosphere model
+ * rather than a linear approximation.
+ *
+ * @param {number} fl      - Flight Level (e.g. 350 for FL350)
+ * @param {number} mach    - Mach number (e.g. 0.78)
+ * @param {number} isaDev  - ISA temperature deviation in °C (default 0)
+ * @returns {number} True Airspeed in knots
+ */
+export function machToTAS(fl, mach, isaDev = 0) {
+  const safeFl   = typeof fl   === 'number' && !isNaN(fl)   ? fl   : 350;
+  const safeMach = typeof mach === 'number' && !isNaN(mach) ? mach : 0.78;
+  const safeDev  = typeof isaDev === 'number' && !isNaN(isaDev) ? isaDev : 0;
+
+  const isaTemp    = getISATemperature(safeFl * 100); // °C
+  const actualTemp = isaTemp + safeDev;               // °C
+  return Math.round(safeMach * getSpeedOfSound(actualTemp));
+}
+
+/**
+ * @deprecated Use machToTAS(fl, mach, isaDev) instead.
+ * Linear heuristic retained for backward-compatibility with tests that reference it directly.
+ * Will be removed in Phase 3 cleanup.
  */
 export function estimateTAS(fl, sat) {
-  const safeFl = typeof fl === 'number' && !isNaN(fl) ? fl : 350;
+  const safeFl  = typeof fl  === 'number' && !isNaN(fl)  ? fl  : 350;
   const safeSat = typeof sat === 'number' && !isNaN(sat) ? sat : -45;
   return Math.round(450 + (safeSat + 45) * 1.2 + (safeFl - 350) * 0.5);
 }

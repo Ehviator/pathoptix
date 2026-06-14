@@ -1,28 +1,47 @@
-const CACHE_NAME = 'pathoptix-v9';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'pathoptix-v10';
+
+// App shell — must load synchronously for the UI to render
+const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/data/climb_perf.json',
-  '/data/cruise_econ.json',
-  '/data/descent_fpa.json',
-  '/data/holding_endurance.json',
-  '/data/driftdown_oei.json',
-  '/data/airways_db.json',
   '/pdf.worker.min.js',
   '/images/marker-icon.png',
   '/images/marker-icon-2x.png',
-  '/images/marker-shadow.png'
+  '/images/marker-shadow.png',
 ];
 
-// Install Event: Cache all assets and data engines
+// All JSON datasets required for offline dispatch — EVERY file in /data/ must
+// be listed here so they are guaranteed present before the cockpit door closes.
+// If any single file fails to precache (e.g. the device was offline during
+// install) the install still completes; individual failures are logged.
+const DATA_ASSETS = [
+  '/data/nav_db.json',
+  '/data/airport_db.json',
+  '/data/airways_db.json',
+  '/data/climb_perf.json',
+  '/data/cruise_econ.json',
+  '/data/descent_fpa.json',
+  '/data/driftdown_oei.json',
+  '/data/holding_endurance.json',
+  '/data/terrain_db.json',
+];
+
+// Install Event: Precache app shell and ALL performance/nav datasets.
+// skipWaiting is called inside waitUntil so the new SW only activates
+// after caching is complete (prevents serving the new UI with old data).
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
+        [...APP_SHELL, ...DATA_ASSETS].map((url) =>
+          cache.add(url).catch((err) =>
+            console.warn(`[SW] Precache miss for ${url}:`, err)
+          )
+        )
+      )
+    ).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 // Activate Event: Clean up old configurations
@@ -74,16 +93,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for large data files
-  if (event.request.url.includes('/data/nav_db.json')) {
+  // Stale-While-Revalidate for ALL performance/nav datasets.
+  // Serve the cached copy immediately (zero latency on startup), then
+  // refresh the cache from the network in the background.
+  // If offline, the cached version is returned silently — no error.
+  if (event.request.url.includes('/data/')) {
     event.respondWith(
-      caches.open(CACHE_NAME).then(cache => 
-        cache.match(event.request).then(cachedResponse => {
-          const fetchPromise = fetch(event.request).then(networkResponse => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          }).catch(() => cachedResponse);
-          return cachedResponse || fetchPromise;
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cachedResponse) => {
+          const networkFetch = fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse.ok) {
+                cache.put(event.request, networkResponse.clone());
+              }
+              return networkResponse;
+            })
+            .catch(() => null); // Network failure is silent — cache is the source of truth
+
+          return cachedResponse || networkFetch;
         })
       )
     );

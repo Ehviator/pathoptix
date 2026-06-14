@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
 import { getCorrectedCostIndex } from '../engine/dynamicModulators.js';
-import { interpolate2D } from '../engine/interpolation.js';
-import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
+import {
+  lookupCruiseMach,
+  calculateCruiseFuelFlow,
+  calculateCruiseSpeeds,
+  calculateSpecificRange,
+  buildStepClimbAdvisory,
+} from '../engine/cruiseEngine.js';
 
 export default function CalculatorCruise() {
   const { mission, updateMissionField, cruiseMatrix, maxOperatingFL, loading } = useMission();
@@ -24,73 +29,51 @@ export default function CalculatorCruise() {
     setLocalState(prev => ({ ...prev, [key]: parsed }));
   };
 
-  // Performance Math Initialization
+  // ── Cruise Engine Computations ────────────────────────────────────────────
   const boundedWind = Math.max(-200, Math.min(200, mission.wind || 0));
   const correctedCI = getCorrectedCostIndex(mission.costIndex, boundedWind);
-  const weightLbs = mission.weight;
-  const weightKg = mission.weight / 2.20462;
-  
-  let resolvedMach = localState.manualMach; 
-  let isOutOfEnvelope = false;
-  const targetAltKey = (mission.cruiseFL * 100).toString();
+  const weightLbs   = mission.weight;
 
-  // Matrix Resolution
+  // 1. Mach resolution: matrix (ECON) or pilot entry (MANUAL)
+  let resolvedMach    = localState.manualMach;
+  let isOutOfEnvelope = false;
+
   if (localState.speedMode === 'ECON') {
-    if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
-      const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
-      const interpResult = interpolate2D(
-        weightLbs,
-        correctedCI,
-        matrix.weights,
-        matrix.cost_index_headers,
-        matrix.data
-      );
-      if (interpResult === null) {
-        isOutOfEnvelope = true;
-        resolvedMach = 0.74; 
-      } else {
-        resolvedMach = Math.round(interpResult * 100) / 100;
-      }
-    }
+    const { mach, isOutOfEnvelope: ooe } = lookupCruiseMach(
+      weightLbs, mission.cruiseFL, correctedCI, cruiseMatrix
+    );
+    resolvedMach    = mach;
+    isOutOfEnvelope = ooe;
   } else {
-    // Envelope Guardrail for Manual Mode
-    if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
-      isOutOfEnvelope = true;
-    }
+    // Envelope guardrail for manual mode
+    if (mission.cruiseFL > 370 && resolvedMach > 0.80) isOutOfEnvelope = true;
   }
 
-  // Atmospheric Vectors
-  const isaTemp = getISATemperature(mission.cruiseFL * 100);
-  const actualTemp = isaTemp + mission.isaDev;
-  const tas = Math.round(getTASFromMach(resolvedMach, actualTemp));
-  const gs = Math.round(tas + boundedWind);
+  // 2. Atmospheric speeds (physics-based Mach → TAS, not a linear heuristic)
+  const { tas, gs } = calculateCruiseSpeeds(
+    mission.cruiseFL, resolvedMach, mission.isaDev, boundedWind
+  );
 
-  // High-Fidelity Base Fuel Curve
-  const baseFFKg = 1550; 
-  const machFactor = (resolvedMach - 0.70) * 4200;
-  const weightFactor = (weightKg - 40000) * 0.028;
-  const altFactor = (mission.cruiseFL - 330) * -14;
-  const antiIceFactor = mission.antiIce ? 180 : 0;
-  
-  let fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
-  
-  // Structural & Aerodynamic Modifiers
-  const cgMac = mission.mac !== '' && mission.mac !== undefined && mission.mac !== null ? mission.mac : 22.5;
-  const cgModifier = cgMac > 28 ? -0.015 : cgMac < 20 ? 0.015 : 0; 
-  const cdlModifier = localState.dragPenalty / 100;
-  
-  fuelFlowKg = fuelFlowKg * (1 + cgModifier + cdlModifier);
-  const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
-  
-  // Efficiencies and Targets
-  const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
-  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
-  
-  // Step Climb Weight Predictor (Calculate weight to clear FL + 2000ft)
-  const nextStepFL = mission.cruiseFL + 20;
-  const stepClimbWeight = Math.max(80000, Math.round(85000 + ((410 - nextStepFL) / 0.00018)));
-  const weightToBurn = mission.weight - stepClimbWeight;
-  const timeToStepMin = fuelFlowLbs > 0 ? (weightToBurn / fuelFlowLbs) * 60 : 0;
+  // 3. Fuel flow (kg/hr scalar → lbs/hr output, all factors in engine module)
+  const fuelFlowLbs = calculateCruiseFuelFlow({
+    weightLbs,
+    fl:          mission.cruiseFL,
+    mach:        resolvedMach,
+    isaDev:      mission.isaDev,
+    antiIce:     mission.antiIce,
+    cgMac:       mission.mac,
+    dragPenalty: localState.dragPenalty,
+  });
+
+  // 4. Efficiency & step-climb advisory
+  const specificRange = calculateSpecificRange(gs, fuelFlowLbs);
+  const {
+    optimalFL,
+    nextStepFL,
+    weightToBurnLbs: weightToBurn,
+    minutesToStep: timeToStepMin,
+    recommendation: stepRecommendation,
+  } = buildStepClimbAdvisory(weightLbs, mission.cruiseFL, fuelFlowLbs);
 
   if (loading) return <div className="panel-container"><p>Synchronizing Performance Matrix...</p></div>;
 
@@ -264,12 +247,12 @@ export default function CalculatorCruise() {
           </div>
 
           <div className="alert-banner info" style={{ marginTop: '24px' }}>
-            {weightToBurn > 0 ? (
-              <span><strong>Step-Climb Advisor:</strong> Aircraft is too heavy for FL{nextStepFL}. Burn <strong>{weightToBurn.toLocaleString()} lbs</strong> (approx. {Math.round(timeToStepMin)} min) to reach aerodynamic step weight of {stepClimbWeight.toLocaleString()} lbs.</span>
-            ) : nextStepFL <= 410 ? (
-              <span><strong>Step-Climb Advisor:</strong> Aerodynamically capable of immediate step climb to <strong>FL{nextStepFL}</strong>. Check wind matrix before initiating climb.</span>
+            {stepRecommendation === 'AT_CEILING' ? (
+              <span><strong>Step-Climb Advisor:</strong> Currently operating at or near structural aircraft ceiling (FL{maxOperatingFL}).</span>
+            ) : stepRecommendation === 'BURN_BEFORE_STEP' ? (
+              <span><strong>Step-Climb Advisor:</strong> Aircraft is too heavy for FL{nextStepFL}. Burn <strong>{weightToBurn.toLocaleString()} lbs</strong> (approx. {timeToStepMin} min at current FF) before initiating step.</span>
             ) : (
-              <span><strong>Step-Climb Advisor:</strong> Currently operating at or near structural aircraft ceiling.</span>
+              <span><strong>Step-Climb Advisor:</strong> Aerodynamically capable of immediate step climb to <strong>FL{nextStepFL}</strong>. Verify wind matrix before initiating.</span>
             )}
           </div>
         </div>
