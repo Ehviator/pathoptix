@@ -1,0 +1,1497 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Data provided by Navigraph - www.navigraph.com
+Data copyright (c) 2026 Jeppesen
+This data may be used for ground based recreational computer game
+simulation software only, and my not be recompiled, interpreted,
+or distributed for any purpose without the written consent of Navigraph.
+
+The contents of this database is dated and must not be used for real
+world navigation as it is unlawful and unsafe to do so.
+-->
+<ProceduresDB version="AIRAC 2606 Rev.1 by Navigraph/Navdata" build="06/02/2026 09:27 UTC" xsi:schemaLocation="http://tempuri.org/XMLSchema.xsd FMC.xsd" xmlns="http://tempuri.org/XMLSchema.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Airport ICAOcode="ZSJX">
+    <Sid Name="AKDM1D" Runways="30">
+      <Sid_Waypoint ID="1">
+        <Name>D297E</Name>
+        <Type>Normal</Type>
+        <Latitude>30.739192</Latitude>
+        <Longitude>120.537694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D297P</Name>
+        <Type>Normal</Type>
+        <Latitude>30.801778</Latitude>
+        <Longitude>120.347936</Longitude>
+        <Speed>0</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>JX109</Name>
+        <Type>Normal</Type>
+        <Latitude>30.551667</Latitude>
+        <Longitude>120.145000</Longitude>
+        <Speed>0</Speed>
+        <Altitude>12800</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>AKDIM</Name>
+        <Type>Normal</Type>
+        <Latitude>30.436111</Latitude>
+        <Longitude>120.052222</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="AKDM3B" Runways="12">
+      <Sid_Waypoint ID="1">
+        <Name>D117I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.656514</Latitude>
+        <Longitude>120.786722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D121R</Name>
+        <Type>Normal</Type>
+        <Latitude>30.770625</Latitude>
+        <Longitude>120.742092</Longitude>
+        <Speed>230</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>NXD</Name>
+        <Type>Normal</Type>
+        <Latitude>30.896667</Latitude>
+        <Longitude>120.430000</Longitude>
+        <Speed>0</Speed>
+        <Altitude>5910</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>JX109</Name>
+        <Type>Normal</Type>
+        <Latitude>30.551667</Latitude>
+        <Longitude>120.145000</Longitude>
+        <Speed>0</Speed>
+        <Altitude>12800</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="5">
+        <Name>AKDIM</Name>
+        <Type>Normal</Type>
+        <Latitude>30.436111</Latitude>
+        <Longitude>120.052222</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="DADA1D" Runways="30">
+      <Sid_Waypoint ID="1">
+        <Name>D297E</Name>
+        <Type>Normal</Type>
+        <Latitude>30.739192</Latitude>
+        <Longitude>120.537694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>230</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Right</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>DADAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.450000</Latitude>
+        <Longitude>121.246667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="DADA3B" Runways="12">
+      <Sid_Waypoint ID="1">
+        <Name>D117I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.656514</Latitude>
+        <Longitude>120.786722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D117N</Name>
+        <Type>Normal</Type>
+        <Latitude>30.627042</Latitude>
+        <Longitude>120.875042</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>D122R</Name>
+        <Type>Normal</Type>
+        <Latitude>30.577911</Latitude>
+        <Longitude>120.942928</Longitude>
+        <Speed>230</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>DADAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.450000</Latitude>
+        <Longitude>121.246667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="NIVK1D" Runways="30">
+      <Sid_Waypoint ID="1">
+        <Name>D297E</Name>
+        <Type>Normal</Type>
+        <Latitude>30.739192</Latitude>
+        <Longitude>120.537694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D297P</Name>
+        <Type>Normal</Type>
+        <Latitude>30.801778</Latitude>
+        <Longitude>120.347936</Longitude>
+        <Speed>0</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>JX107</Name>
+        <Type>Normal</Type>
+        <Latitude>30.841667</Latitude>
+        <Longitude>120.211667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>NIVIK</Name>
+        <Type>Normal</Type>
+        <Latitude>30.761667</Latitude>
+        <Longitude>119.910833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>9850</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="NIVK3B" Runways="12">
+      <Sid_Waypoint ID="1">
+        <Name>D117I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.656514</Latitude>
+        <Longitude>120.786722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D121R</Name>
+        <Type>Normal</Type>
+        <Latitude>30.770625</Latitude>
+        <Longitude>120.742092</Longitude>
+        <Speed>230</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>NXD</Name>
+        <Type>Normal</Type>
+        <Latitude>30.896667</Latitude>
+        <Longitude>120.430000</Longitude>
+        <Speed>0</Speed>
+        <Altitude>5910</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>NIVIK</Name>
+        <Type>Normal</Type>
+        <Latitude>30.761667</Latitude>
+        <Longitude>119.910833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>9850</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="P526B3" Runways="12">
+      <Sid_Waypoint ID="1">
+        <Name>D117I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.656514</Latitude>
+        <Longitude>120.786722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>D121R</Name>
+        <Type>Normal</Type>
+        <Latitude>30.770625</Latitude>
+        <Longitude>120.742092</Longitude>
+        <Speed>230</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>D037I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.837533</Latitude>
+        <Longitude>120.719514</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Right</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>P526</Name>
+        <Type>Normal</Type>
+        <Latitude>30.993611</Latitude>
+        <Longitude>120.823611</Longitude>
+        <Speed>0</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Sid Name="P526D1" Runways="30">
+      <Sid_Waypoint ID="1">
+        <Name>D297E</Name>
+        <Type>Normal</Type>
+        <Latitude>30.739192</Latitude>
+        <Longitude>120.537694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="2">
+        <Name>XJX</Name>
+        <Type>VorRadialIntc</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Hdg_Crs>0</Hdg_Crs>
+        <Hdg_Crs_value>102</Hdg_Crs_value>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <RadialtoIntercept>022</RadialtoIntercept>
+        <Sp_Turn>Right</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="3">
+        <Name>D037I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.837533</Latitude>
+        <Longitude>120.719514</Longitude>
+        <Speed>230</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+      <Sid_Waypoint ID="4">
+        <Name>P526</Name>
+        <Type>Normal</Type>
+        <Latitude>30.993611</Latitude>
+        <Longitude>120.823611</Longitude>
+        <Speed>0</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Sid_Waypoint>
+    </Sid>
+    <Star Name="DADA2A" Runways="30">
+      <Star_Waypoint ID="1">
+        <Name>DADAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.450000</Latitude>
+        <Longitude>121.246667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>D122R</Name>
+        <Type>Normal</Type>
+        <Latitude>30.577911</Latitude>
+        <Longitude>120.942928</Longitude>
+        <Speed>210</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="DADA4C" Runways="12">
+      <Star_Waypoint ID="1">
+        <Name>DADAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.450000</Latitude>
+        <Longitude>121.246667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="IGRA2A" Runways="30">
+      <Star_Waypoint ID="1">
+        <Name>IGRAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.716667</Latitude>
+        <Longitude>119.805833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>NIVIK</Name>
+        <Type>Normal</Type>
+        <Latitude>30.761667</Latitude>
+        <Longitude>119.910833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>9850</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="3">
+        <Name>JX107</Name>
+        <Type>Normal</Type>
+        <Latitude>30.841667</Latitude>
+        <Longitude>120.211667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="4">
+        <Name>D297O</Name>
+        <Type>Normal</Type>
+        <Latitude>30.795453</Latitude>
+        <Longitude>120.357589</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="5">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="IGRA4C" Runways="12">
+      <Star_Waypoint ID="1">
+        <Name>IGRAT</Name>
+        <Type>Normal</Type>
+        <Latitude>30.716667</Latitude>
+        <Longitude>119.805833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>NIVIK</Name>
+        <Type>Normal</Type>
+        <Latitude>30.761667</Latitude>
+        <Longitude>119.910833</Longitude>
+        <Speed>0</Speed>
+        <Altitude>9850</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="3">
+        <Name>JX107</Name>
+        <Type>Normal</Type>
+        <Latitude>30.841667</Latitude>
+        <Longitude>120.211667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="4">
+        <Name>D297O</Name>
+        <Type>Normal</Type>
+        <Latitude>30.795453</Latitude>
+        <Longitude>120.357589</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="KAKS2A" Runways="30">
+      <Star_Waypoint ID="1">
+        <Name>KAKIS</Name>
+        <Type>Normal</Type>
+        <Latitude>30.483333</Latitude>
+        <Longitude>120.146667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>JX108</Name>
+        <Type>Normal</Type>
+        <Latitude>30.541667</Latitude>
+        <Longitude>120.186667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>13800</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="3">
+        <Name>D297O</Name>
+        <Type>Normal</Type>
+        <Latitude>30.795453</Latitude>
+        <Longitude>120.357589</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="4">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="KAKS4C" Runways="12">
+      <Star_Waypoint ID="1">
+        <Name>KAKIS</Name>
+        <Type>Normal</Type>
+        <Latitude>30.483333</Latitude>
+        <Longitude>120.146667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>JX108</Name>
+        <Type>Normal</Type>
+        <Latitude>30.541667</Latitude>
+        <Longitude>120.186667</Longitude>
+        <Speed>0</Speed>
+        <Altitude>13800</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="3">
+        <Name>D297O</Name>
+        <Type>Normal</Type>
+        <Latitude>30.795453</Latitude>
+        <Longitude>120.357589</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="P526A2" Runways="30">
+      <Star_Waypoint ID="1">
+        <Name>P526</Name>
+        <Type>Normal</Type>
+        <Latitude>30.993611</Latitude>
+        <Longitude>120.823611</Longitude>
+        <Speed>0</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Star Name="P526C4" Runways="12">
+      <Star_Waypoint ID="1">
+        <Name>P526</Name>
+        <Type>Normal</Type>
+        <Latitude>30.993611</Latitude>
+        <Longitude>120.823611</Longitude>
+        <Speed>0</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+      <Star_Waypoint ID="2">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>3940</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </Star_Waypoint>
+    </Star>
+    <Approach Name="VDM12">
+      <App_Waypoint ID="1">
+        <Name>CF12</Name>
+        <Type>Normal</Type>
+        <Latitude>30.766119</Latitude>
+        <Longitude>120.450061</Longitude>
+        <Speed>0</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="2">
+        <Name>FF12</Name>
+        <Type>Normal</Type>
+        <Latitude>30.738331</Latitude>
+        <Longitude>120.537150</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="3">
+        <Name>15VOR</Name>
+        <Type>Normal</Type>
+        <Latitude>30.717669</Latitude>
+        <Longitude>120.602700</Longitude>
+        <Speed>0</Speed>
+        <Altitude>840</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="4">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>0</Speed>
+        <Altitude>356</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="5">
+        <Name>RW12</Name>
+        <Type>Runway</Type>
+        <Latitude>30.703361</Latitude>
+        <Longitude>120.646417</Longitude>
+        <Speed>0</Speed>
+        <Altitude>63</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="6">
+        <Name>XJX</Name>
+        <Type>DmeIntc</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Hdg_Crs>0</Hdg_Crs>
+        <Hdg_Crs_value>117</Hdg_Crs_value>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <DMEtoIntercept>9.0</DMEtoIntercept>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="7">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="8">
+        <Name>XJX</Name>
+        <Type>Hold</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>230</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Hld_Rad_or_Inbd>Inbd</Hld_Rad_or_Inbd>
+        <Hld_Rad_value>315</Hld_Rad_value>
+        <Hld_Turn>Right</Hld_Turn>
+        <Hld_Time_or_Dist>Time</Hld_Time_or_Dist>
+        <Hld_td_value>1.0</Hld_td_value>
+        <Sp_Turn>Right</Sp_Turn>
+      </App_Waypoint>
+      <App_Transition Name="D297O">
+        <AppTr_Waypoint ID="1">
+          <Name>D297O</Name>
+          <Type>Normal</Type>
+          <Latitude>30.795453</Latitude>
+          <Longitude>120.357589</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX1">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>315</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>10.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX2">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>306</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>10.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+    </Approach>
+    <Approach Name="VDM30">
+      <App_Waypoint ID="1">
+        <Name>CF30</Name>
+        <Type>Normal</Type>
+        <Latitude>30.638447</Latitude>
+        <Longitude>120.848656</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="2">
+        <Name>FF30</Name>
+        <Type>Normal</Type>
+        <Latitude>30.657667</Latitude>
+        <Longitude>120.788894</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="3">
+        <Name>52VOR</Name>
+        <Type>Normal</Type>
+        <Latitude>30.678497</Latitude>
+        <Longitude>120.724028</Longitude>
+        <Speed>0</Speed>
+        <Altitude>840</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="4">
+        <Name>MD30</Name>
+        <Type>Normal</Type>
+        <Latitude>30.686633</Latitude>
+        <Longitude>120.698658</Longitude>
+        <Speed>0</Speed>
+        <Altitude>397</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="5">
+        <Name>RW30</Name>
+        <Type>Runway</Type>
+        <Latitude>30.692694</Latitude>
+        <Longitude>120.679694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>63</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="6">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>0</Speed>
+        <Altitude>0</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="7">
+        <Name>XJX</Name>
+        <Type>DmeIntc</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Hdg_Crs>0</Hdg_Crs>
+        <Hdg_Crs_value>297</Hdg_Crs_value>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <DMEtoIntercept>5.0</DMEtoIntercept>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="8">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Right</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="9">
+        <Name>XJX</Name>
+        <Type>Hold</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>230</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Hld_Rad_or_Inbd>Inbd</Hld_Rad_or_Inbd>
+        <Hld_Rad_value>103</Hld_Rad_value>
+        <Hld_Turn>Left</Hld_Turn>
+        <Hld_Time_or_Dist>Time</Hld_Time_or_Dist>
+        <Hld_td_value>1.0</Hld_td_value>
+        <Sp_Turn>Left</Sp_Turn>
+      </App_Waypoint>
+      <App_Transition Name="D122R">
+        <AppTr_Waypoint ID="1">
+          <Name>D122R</Name>
+          <Type>Normal</Type>
+          <Latitude>30.577911</Latitude>
+          <Longitude>120.942928</Longitude>
+          <Speed>210</Speed>
+          <Altitude>2960</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX1">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>103</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>12.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX2">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>110</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>12.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+    </Approach>
+    <Approach Name="ILSY12">
+      <App_Waypoint ID="1">
+        <Name>CF12</Name>
+        <Type>Normal</Type>
+        <Latitude>30.766119</Latitude>
+        <Longitude>120.450061</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="2">
+        <Name>FF12</Name>
+        <Type>Normal</Type>
+        <Latitude>30.738331</Latitude>
+        <Longitude>120.537150</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="3">
+        <Name>RW12</Name>
+        <Type>Runway</Type>
+        <Latitude>30.703361</Latitude>
+        <Longitude>120.646417</Longitude>
+        <Speed>0</Speed>
+        <Altitude>63</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="4">
+        <Name>D117I</Name>
+        <Type>Normal</Type>
+        <Latitude>30.656514</Latitude>
+        <Longitude>120.786722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="5">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="6">
+        <Name>XJX</Name>
+        <Type>Hold</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>230</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Hld_Rad_or_Inbd>Inbd</Hld_Rad_or_Inbd>
+        <Hld_Rad_value>315</Hld_Rad_value>
+        <Hld_Turn>Right</Hld_Turn>
+        <Hld_Time_or_Dist>Time</Hld_Time_or_Dist>
+        <Hld_td_value>1.0</Hld_td_value>
+        <Sp_Turn>Right</Sp_Turn>
+      </App_Waypoint>
+      <App_Transition Name="D297O">
+        <AppTr_Waypoint ID="1">
+          <Name>D297O</Name>
+          <Type>Normal</Type>
+          <Latitude>30.795453</Latitude>
+          <Longitude>120.357589</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX1">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>315</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>10.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX2">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>306</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>10.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+    </Approach>
+    <Approach Name="ILSY30">
+      <App_Waypoint ID="1">
+        <Name>CF30</Name>
+        <Type>Normal</Type>
+        <Latitude>30.638447</Latitude>
+        <Longitude>120.848656</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="2">
+        <Name>FF30</Name>
+        <Type>Normal</Type>
+        <Latitude>30.657667</Latitude>
+        <Longitude>120.788894</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1970</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="3">
+        <Name>RW30</Name>
+        <Type>Runway</Type>
+        <Latitude>30.692694</Latitude>
+        <Longitude>120.679694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>63</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="4">
+        <Name>D297E</Name>
+        <Type>Normal</Type>
+        <Latitude>30.739192</Latitude>
+        <Longitude>120.537694</Longitude>
+        <Speed>0</Speed>
+        <Altitude>1320</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="5">
+        <Name>XJX</Name>
+        <Type>Normal</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>210</Speed>
+        <Altitude>2960</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Right</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="6">
+        <Name>XJX</Name>
+        <Type>Hold</Type>
+        <Latitude>30.708694</Latitude>
+        <Longitude>120.629778</Longitude>
+        <Speed>230</Speed>
+        <Altitude>4930</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Hld_Rad_or_Inbd>Inbd</Hld_Rad_or_Inbd>
+        <Hld_Rad_value>103</Hld_Rad_value>
+        <Hld_Turn>Left</Hld_Turn>
+        <Hld_Time_or_Dist>Time</Hld_Time_or_Dist>
+        <Hld_td_value>1.0</Hld_td_value>
+        <Sp_Turn>Left</Sp_Turn>
+      </App_Waypoint>
+      <App_Transition Name="D122R">
+        <AppTr_Waypoint ID="1">
+          <Name>D122R</Name>
+          <Type>Normal</Type>
+          <Latitude>30.577911</Latitude>
+          <Longitude>120.942928</Longitude>
+          <Speed>210</Speed>
+          <Altitude>2960</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX1">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>103</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>12.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XJX2">
+        <AppTr_Waypoint ID="1">
+          <Name>XJX</Name>
+          <Type>Normal</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>210</Speed>
+          <Altitude>3940</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+        <AppTr_Waypoint ID="2">
+          <Name>XJX</Name>
+          <Type>DmeIntc</Type>
+          <Latitude>30.708694</Latitude>
+          <Longitude>120.629778</Longitude>
+          <Speed>0</Speed>
+          <Altitude>0</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>at</AltitudeRestriction>
+          <Hdg_Crs>0</Hdg_Crs>
+          <Hdg_Crs_value>110</Hdg_Crs_value>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <DMEtoIntercept>12.0</DMEtoIntercept>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+    </Approach>
+  </Airport>
+</ProceduresDB>

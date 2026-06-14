@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Data provided by Navigraph - www.navigraph.com
+Data copyright (c) 2026 Jeppesen
+This data may be used for ground based recreational computer game
+simulation software only, and my not be recompiled, interpreted,
+or distributed for any purpose without the written consent of Navigraph.
+
+The contents of this database is dated and must not be used for real
+world navigation as it is unlawful and unsafe to do so.
+-->
+<ProceduresDB version="AIRAC 2606 Rev.1 by Navigraph/Navdata" build="06/02/2026 09:27 UTC" xsi:schemaLocation="http://tempuri.org/XMLSchema.xsd FMC.xsd" xmlns="http://tempuri.org/XMLSchema.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Airport ICAOcode="HTIR">
+    <Approach Name="RNV20">
+      <App_Waypoint ID="1">
+        <Name>IR501</Name>
+        <Type>Normal</Type>
+        <Latitude>-7.441811</Latitude>
+        <Longitude>35.802797</Longitude>
+        <Speed>200</Speed>
+        <Altitude>7600</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="2">
+        <Name>IR502</Name>
+        <Type>Normal</Type>
+        <Latitude>-7.531708</Latitude>
+        <Longitude>35.782722</Longitude>
+        <Speed>0</Speed>
+        <Altitude>7000</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="3">
+        <Name>IR503</Name>
+        <Type>Normal</Type>
+        <Latitude>-7.624800</Latitude>
+        <Longitude>35.761925</Longitude>
+        <Speed>0</Speed>
+        <Altitude>5188</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="4">
+        <Name>RW20</Name>
+        <Type>Runway</Type>
+        <Latitude>-7.654219</Latitude>
+        <Longitude>35.755350</Longitude>
+        <Speed>0</Speed>
+        <Altitude>4720</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-over</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Auto</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="5">
+        <Name>XOSED</Name>
+        <Type>Normal</Type>
+        <Latitude>-7.463656</Latitude>
+        <Longitude>35.901056</Longitude>
+        <Speed>200</Speed>
+        <Altitude>10500</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>at</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Sp_Turn>Left</Sp_Turn>
+      </App_Waypoint>
+      <App_Waypoint ID="6">
+        <Name>XOSED</Name>
+        <Type>Hold</Type>
+        <Latitude>-7.463656</Latitude>
+        <Longitude>35.901056</Longitude>
+        <Speed>200</Speed>
+        <Altitude>10500</Altitude>
+        <AltitudeCons>0</AltitudeCons>
+        <AltitudeRestriction>above</AltitudeRestriction>
+        <Flytype>Fly-by</Flytype>
+        <BankLimit>25</BankLimit>
+        <Hld_Rad_or_Inbd>Inbd</Hld_Rad_or_Inbd>
+        <Hld_Rad_value>285</Hld_Rad_value>
+        <Hld_Turn>Right</Hld_Turn>
+        <Hld_Time_or_Dist>Time</Hld_Time_or_Dist>
+        <Hld_td_value>1.0</Hld_td_value>
+        <Sp_Turn>Right</Sp_Turn>
+      </App_Waypoint>
+      <App_Transition Name="APGAM">
+        <AppTr_Waypoint ID="1">
+          <Name>APGAM</Name>
+          <Type>Normal</Type>
+          <Latitude>-7.419944</Latitude>
+          <Longitude>35.704550</Longitude>
+          <Speed>200</Speed>
+          <Altitude>7600</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XORUN">
+        <AppTr_Waypoint ID="1">
+          <Name>XORUN</Name>
+          <Type>Normal</Type>
+          <Latitude>-7.343742</Latitude>
+          <Longitude>35.824689</Longitude>
+          <Speed>200</Speed>
+          <Altitude>10500</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+      <App_Transition Name="XOSED">
+        <AppTr_Waypoint ID="1">
+          <Name>XOSED</Name>
+          <Type>Normal</Type>
+          <Latitude>-7.463656</Latitude>
+          <Longitude>35.901056</Longitude>
+          <Speed>200</Speed>
+          <Altitude>8600</Altitude>
+          <AltitudeCons>0</AltitudeCons>
+          <AltitudeRestriction>above</AltitudeRestriction>
+          <Flytype>Fly-by</Flytype>
+          <BankLimit>25</BankLimit>
+          <Sp_Turn>Auto</Sp_Turn>
+        </AppTr_Waypoint>
+      </App_Transition>
+    </Approach>
+  </Airport>
+</ProceduresDB>
