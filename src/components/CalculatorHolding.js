@@ -7,7 +7,7 @@ export default function CalculatorHolding() {
     altitude: 5000, 
     holdDuration: 20, 
     remainingFuel: 8000,
-    iceState: 'OFF' // States: 'OFF', 'ON' (Anti-Ice), 'ACCRETION' (Structural Drag)
+    iceState: 'OFF' 
   });
 
   const [holdingData, setHoldingData] = useState(null);
@@ -26,15 +26,15 @@ export default function CalculatorHolding() {
       });
   }, []);
 
-  const adjustInput = (key, step, min, max) => {
-    setInputs(prev => {
-      const nextVal = prev[key] + step;
-      if (nextVal < min || nextVal > max) return prev;
-      return { ...prev, [key]: nextVal };
-    });
+  const handleManualEntry = (key, value, min, max) => {
+    let parsed = parseInt(value, 10);
+    if (isNaN(parsed)) return;
+    if (parsed < min) parsed = min;
+    if (parsed > max) parsed = max;
+    setInputs(prev => ({ ...prev, [key]: parsed }));
   };
 
-  let fuelFlowPerHour = 2900; // Baseline default fallback
+  let fuelFlowPerHour = 2900; 
   let targetMatrixKey = 'anti_ice_off';
 
   if (inputs.iceState === 'ON') targetMatrixKey = 'anti_ice_on';
@@ -49,101 +49,87 @@ export default function CalculatorHolding() {
       matrix.altitudes,
       matrix.data
     );
-    if (interpResult !== null) {
-      fuelFlowPerHour = Math.round(interpResult);
-    }
+    if (interpResult !== null) fuelFlowPerHour = Math.round(interpResult);
   }
 
   const fuelFlowPerMin = fuelFlowPerHour / 60;
   const plannedHoldBurn = Math.round(fuelFlowPerMin * inputs.holdDuration);
 
-  // Reserve limit configuration parameters
   const reserveFuelLimit = 2500;
   const usableHoldingFuel = Math.max(0, inputs.remainingFuel - reserveFuelLimit);
   const maxEnduranceMin = fuelFlowPerHour > 0 ? (usableHoldingFuel / fuelFlowPerHour) * 60 : 0;
   const maxEnduranceFormatted = `${Math.floor(maxEnduranceMin)} min`;
 
-  // Best holding speed (Green Dot matching ice accretion structural drag profiles)
   let baseGreenDot = 185 + (inputs.weight - 85000) * 0.0011 + (inputs.altitude / 1000) * 0.5;
-  if (inputs.iceState === 'ACCRETION') baseGreenDot += 28; // Airframe icing speed penalty boundary adjustment
+  if (inputs.iceState === 'ACCRETION') baseGreenDot += 28; 
   const bestHoldingSpeed = Math.round(baseGreenDot);
 
-  if (loading) return <div className="panel-container"><p>Loading Endurance Database...</p></div>;
+  if (loading) return <div className="panel-container"><p>Synchronizing Matrix...</p></div>;
 
   return (
     <div className="panel-container">
       <div className="panel-header">
         <h2>Terminal Holding & Endurance Optimizer</h2>
         <div className="mode-toggle-bar">
-          <button 
-            type="button" 
-            className={`btn-toggle ${inputs.iceState === 'OFF' ? 'active' : ''}`}
-            onClick={() => setInputs(prev => ({ ...prev, iceState: 'OFF' }))}
-          >
-            Anti-Ice OFF
-          </button>
-          <button 
-            type="button" 
-            className={`btn-toggle ${inputs.iceState === 'ON' ? 'active' : ''}`}
-            onClick={() => setInputs(prev => ({ ...prev, iceState: 'ON' }))}
-          >
-            Anti-Ice ON (+10.1%)
-          </button>
-          <button 
-            type="button" 
-            className={`btn-toggle ${inputs.iceState === 'ACCRETION' ? 'active' : ''}`}
-            onClick={() => setInputs(prev => ({ ...prev, iceState: 'ACCRETION' }))}
-          >
-            Ice Accretion (+24.1%)
-          </button>
+          <button type="button" className={`btn-toggle ${inputs.iceState === 'OFF' ? 'active' : ''}`} onClick={() => setInputs(prev => ({ ...prev, iceState: 'OFF' }))}>Anti-Ice OFF</button>
+          <button type="button" className={`btn-toggle ${inputs.iceState === 'ON' ? 'active' : ''}`} onClick={() => setInputs(prev => ({ ...prev, iceState: 'ON' }))}>Anti-Ice ON</button>
+          <button type="button" className={`btn-toggle ${inputs.iceState === 'ACCRETION' ? 'active' : ''}`} onClick={() => setInputs(prev => ({ ...prev, iceState: 'ACCRETION' }))}>Ice Accretion</button>
         </div>
       </div>
 
       <div className="panel-body grid-2col">
         <div className="input-section glass-panel">
-          <h3>Holding Configuration Inputs</h3>
+          <h3>Holding Inputs</h3>
 
-          <div className="input-group-tactile">
-            <label>Current Aircraft Weight (lbs)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('weight', -1000, 85000, 130000)} className="btn-step">──</button>
-              <span className="value-display">{inputs.weight.toLocaleString()} lbs</span>
-              <button type="button" onClick={() => adjustInput('weight', 1000, 85000, 130000)} className="btn-step">+</button>
+          <div className="input-grid-spatial">
+            <div className="input-cell-spatial">
+              <label>Gross Weight (lbs)</label>
+              <input 
+                type="number" 
+                key={`weight-${inputs.weight}`}
+                defaultValue={inputs.weight}
+                onBlur={(e) => handleManualEntry('weight', e.target.value, 85000, 130000)}
+                className="touch-input-field"
+              />
             </div>
-          </div>
 
-          <div className="input-group-tactile">
-            <label>Holding Altitude (ft)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('altitude', -1000, 1500, 25000)} className="btn-step">──</button>
-              <span className="value-display">{inputs.altitude.toLocaleString()} ft</span>
-              <button type="button" onClick={() => adjustInput('altitude', 1000, 1500, 25000)} className="btn-step">+</button>
+            <div className="input-cell-spatial">
+              <label>Holding Altitude (ft)</label>
+              <input 
+                type="number" 
+                key={`alt-${inputs.altitude}`}
+                defaultValue={inputs.altitude}
+                onBlur={(e) => handleManualEntry('altitude', e.target.value, 1500, 25000)}
+                className="touch-input-field"
+              />
             </div>
-          </div>
 
-          <div className="input-group-tactile">
-            <label>Remaining Fuel On-board (lbs)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('remainingFuel', -500, 3000, 15000)} className="btn-step">──</button>
-              <span className="value-display">{inputs.remainingFuel.toLocaleString()} lbs</span>
-              <button type="button" onClick={() => adjustInput('remainingFuel', 500, 3000, 15000)} className="btn-step">+</button>
+            <div className="input-cell-spatial">
+              <label>Fuel On-Board (lbs)</label>
+              <input 
+                type="number" 
+                key={`fuel-${inputs.remainingFuel}`}
+                defaultValue={inputs.remainingFuel}
+                onBlur={(e) => handleManualEntry('remainingFuel', e.target.value, 3000, 15000)}
+                className="touch-input-field"
+              />
             </div>
-            <span className="caption">Standard reserve limit of 2,500 lbs will be protected.</span>
-          </div>
 
-          <div className="input-group-tactile">
-            <label>Planned Hold Duration (min)</label>
-            <div className="tactile-row">
-              <button type="button" onClick={() => adjustInput('holdDuration', -5, 5, 90)} className="btn-step">──</button>
-              <span className="value-display">{inputs.holdDuration} min</span>
-              <button type="button" onClick={() => adjustInput('holdDuration', 5, 5, 90)} className="btn-step">+</button>
+            <div className="input-cell-spatial">
+              <label>Hold Plan Time (min)</label>
+              <input 
+                type="number" 
+                key={`holdTime-${inputs.holdDuration}`}
+                defaultValue={inputs.holdDuration}
+                onBlur={(e) => handleManualEntry('holdDuration', e.target.value, 5, 90)}
+                className="touch-input-field"
+              />
             </div>
           </div>
         </div>
 
         <div className="results-section glass-panel highlight-accent">
           <h3>Endurance Profile Output</h3>
-
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Planned Hold Burn</span>
@@ -160,22 +146,9 @@ export default function CalculatorHolding() {
           </div>
 
           <div className="performance-table">
-            <div className="table-row">
-              <span>Usable Hold Fuel (Reserves Protected)</span>
-              <span className="val highlight">{usableHoldingFuel.toLocaleString()} lbs</span>
-            </div>
-            <div className="table-row">
-              <span>Best Endurance Speed (Green Dot)</span>
-              <span className="val highlight">{bestHoldingSpeed} kt IAS</span>
-            </div>
-            <div className="table-row">
-              <span>Hourly Fuel Flow per Engine</span>
-              <span>{Math.round(fuelFlowPerHour / 2).toLocaleString()} lbs/h</span>
-            </div>
-            <div className="table-row">
-              <span>Protected Fuel Reserve</span>
-              <span>{reserveFuelLimit.toLocaleString()} lbs</span>
-            </div>
+            <div className="table-row"><span>Usable Fuel (Reserves Safe)</span><span className="val highlight">{usableHoldingFuel.toLocaleString()} lbs</span></div>
+            <div className="table-row"><span>Best Endurance Speed</span><span className="val highlight">{bestHoldingSpeed} kt IAS</span></div>
+            <div className="table-row"><span>Protected Fuel Reserve</span><span>{reserveFuelLimit.toLocaleString()} lbs</span></div>
           </div>
 
           {inputs.holdDuration > maxEnduranceMin ? (
