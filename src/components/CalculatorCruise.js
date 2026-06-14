@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
 import { getCorrectedCostIndex } from '../engine/dynamicModulators.js';
 import { interpolate2D } from '../engine/interpolation.js';
@@ -6,79 +6,94 @@ import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 
 export default function CalculatorCruise() {
   const { mission, updateMissionField, cruiseMatrix, maxOperatingFL, loading } = useMission();
-
-  const hasIncompleteInputs = mission.weight === "" || 
-                              mission.cruiseFL === "" || 
-                              mission.isaDev === "" || 
-                              mission.wind === "" ||
-                              (mission.speedMode === 'ECON' && mission.costIndex === "") ||
-                              (mission.speedMode === 'MANUAL' && mission.manualMach === "");
-
-  const boundedWind = hasIncompleteInputs ? 0 : Math.max(-200, Math.min(200, mission.wind));
-  const correctedCI = hasIncompleteInputs ? 0 : getCorrectedCostIndex(mission.costIndex, boundedWind);
-  const weightLbs = hasIncompleteInputs ? 0 : mission.weight;
-  const weightKg = hasIncompleteInputs ? 0 : mission.weight / 2.20462;
   
-  let resolvedMach = hasIncompleteInputs ? 0 : mission.manualMach; 
-  let isOutOfEnvelope = false;
-  const targetAltKey = hasIncompleteInputs ? "33000" : (mission.cruiseFL * 100).toString();
+  // Tactical UI and Structural parameters kept in local component state
+  const [localState, setLocalState] = useState({
+    speedMode: 'ECON', // 'ECON' or 'MANUAL'
+    manualMach: 0.78,
+    cgMac: 22.5, // Center of Gravity % Mean Aerodynamic Chord
+    dragPenalty: 0.0 // MEL/CDL flat drag percentage increase
+  });
 
-  if (!hasIncompleteInputs) {
-    if (mission.speedMode === 'ECON') {
-      if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
-        const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
-        const interpResult = interpolate2D(
-          weightLbs,
-          correctedCI,
-          matrix.weights,
-          matrix.cost_index_headers,
-          matrix.data
-        );
-        if (interpResult === null) {
-          isOutOfEnvelope = true;
-          resolvedMach = 0.74; 
-        } else {
-          resolvedMach = Math.round(interpResult * 100) / 100;
-        }
-      }
-    } else {
-      if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
+  const handleLocalEntry = (key, value, min, max) => {
+    let parsed = parseFloat(value);
+    if (isNaN(parsed)) return;
+    
+    if (parsed < min) parsed = min;
+    if (parsed > max) parsed = max;
+
+    setLocalState(prev => ({ ...prev, [key]: parsed }));
+  };
+
+  // Performance Math Initialization
+  const boundedWind = Math.max(-200, Math.min(200, mission.wind || 0));
+  const correctedCI = getCorrectedCostIndex(mission.costIndex, boundedWind);
+  const weightLbs = mission.weight;
+  const weightKg = mission.weight / 2.20462;
+  
+  let resolvedMach = localState.manualMach; 
+  let isOutOfEnvelope = false;
+  const targetAltKey = (mission.cruiseFL * 100).toString();
+
+  // Matrix Resolution
+  if (localState.speedMode === 'ECON') {
+    if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
+      const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
+      const interpResult = interpolate2D(
+        weightLbs,
+        correctedCI,
+        matrix.weights,
+        matrix.cost_index_headers,
+        matrix.data
+      );
+      if (interpResult === null) {
         isOutOfEnvelope = true;
+        resolvedMach = 0.74; 
+      } else {
+        resolvedMach = Math.round(interpResult * 100) / 100;
       }
+    }
+  } else {
+    // Envelope Guardrail for Manual Mode
+    if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
+      isOutOfEnvelope = true;
     }
   }
 
-  const isaTemp = hasIncompleteInputs ? 0 : getISATemperature(mission.cruiseFL * 100);
-  const actualTemp = isaTemp + (hasIncompleteInputs ? 0 : mission.isaDev);
-  const tas = hasIncompleteInputs ? "---" : Math.round(getTASFromMach(resolvedMach, actualTemp));
-  const gs = hasIncompleteInputs ? "---" : Math.round(tas + boundedWind);
+  // Atmospheric Vectors
+  const isaTemp = getISATemperature(mission.cruiseFL * 100);
+  const actualTemp = isaTemp + mission.isaDev;
+  const tas = Math.round(getTASFromMach(resolvedMach, actualTemp));
+  const gs = Math.round(tas + boundedWind);
 
+  // High-Fidelity Base Fuel Curve
   const baseFFKg = 1550; 
-  const machFactor = hasIncompleteInputs ? 0 : (resolvedMach - 0.70) * 4200;
-  const weightFactor = hasIncompleteInputs ? 0 : (weightKg - 40000) * 0.028;
-  const altFactor = hasIncompleteInputs ? 0 : (mission.cruiseFL - 330) * -14;
-  const antiIceFactor = hasIncompleteInputs ? 0 : (mission.antiIce ? 180 : 0);
+  const machFactor = (resolvedMach - 0.70) * 4200;
+  const weightFactor = (weightKg - 40000) * 0.028;
+  const altFactor = (mission.cruiseFL - 330) * -14;
+  const antiIceFactor = mission.antiIce ? 180 : 0;
   
-  const fuelFlowKg = hasIncompleteInputs ? 0 : Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
-  const fuelFlowLbs = hasIncompleteInputs ? "---" : Math.round(fuelFlowKg * 2.20462);
-  const specificRange = hasIncompleteInputs || fuelFlowLbs === 0 || tas === "---" ? "---" : Math.round((gs / fuelFlowLbs) * 1000) / 1000;
-  const optimalFL = hasIncompleteInputs ? "---" : Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
+  let fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
+  
+  // Structural & Aerodynamic Modifiers
+  // Aft CG (>25% MAC) reduces trim drag. Fwd CG (<20% MAC) increases trim drag.
+  const cgModifier = localState.cgMac > 28 ? -0.015 : localState.cgMac < 20 ? 0.015 : 0; 
+  const cdlModifier = localState.dragPenalty / 100;
+  
+  fuelFlowKg = fuelFlowKg * (1 + cgModifier + cdlModifier);
+  const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
+  
+  // Efficiencies and Targets
+  const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
+  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
+  
+  // Step Climb Weight Predictor (Calculate weight to clear FL + 2000ft)
+  const nextStepFL = mission.cruiseFL + 20;
+  const stepClimbWeight = Math.max(80000, Math.round(85000 + ((410 - nextStepFL) / 0.00018)));
+  const weightToBurn = mission.weight - stepClimbWeight;
+  const timeToStepMin = fuelFlowLbs > 0 ? (weightToBurn / fuelFlowLbs) * 60 : 0;
 
-  // --- Trip Planning Calculations ---
-  const hasTripDistance = mission.tripDistance !== "" && mission.tripDistance > 0;
-  const hasPlannedFuel = mission.plannedFuelBurn !== "" && mission.plannedFuelBurn > 0;
-  const canCalcTrip = !hasIncompleteInputs && hasTripDistance && gs !== "---" && gs > 0 && fuelFlowLbs !== "---" && fuelFlowLbs > 0;
-
-  const eteHours = canCalcTrip ? mission.tripDistance / gs : 0;
-  const eteMinTotal = canCalcTrip ? Math.round(eteHours * 60) : 0;
-  const eteH = Math.floor(eteMinTotal / 60);
-  const eteM = eteMinTotal % 60;
-  const eteFormatted = canCalcTrip ? `${eteH}:${eteM.toString().padStart(2, '0')}` : "---";
-
-  const calcFuelRequired = canCalcTrip ? Math.round(fuelFlowLbs * eteHours) : 0;
-  const fuelVariance = canCalcTrip && hasPlannedFuel ? Math.round(mission.plannedFuelBurn - calcFuelRequired) : null;
-
-  if (loading) return <div className="panel-container"><div className="loading-container"><div className="loading-spinner"></div><p>Synchronizing Cruise Performance Database...</p></div></div>;
+  if (loading) return <div className="panel-container"><p>Synchronizing Performance Matrix...</p></div>;
 
   return (
     <div className="panel-container">
@@ -87,15 +102,15 @@ export default function CalculatorCruise() {
         <div className="mode-toggle-bar">
           <button 
             type="button" 
-            className={`btn-toggle ${mission.speedMode === 'ECON' ? 'active' : ''}`}
-            onClick={() => updateMissionField('speedMode', 'ECON')}
+            className={`btn-toggle ${localState.speedMode === 'ECON' ? 'active' : ''}`}
+            onClick={() => setLocalState(prev => ({ ...prev, speedMode: 'ECON' }))}
           >
             FMC ECON MODE (CI)
           </button>
           <button 
             type="button" 
-            className={`btn-toggle ${mission.speedMode === 'MANUAL' ? 'active' : ''}`}
-            onClick={() => updateMissionField('speedMode', 'MANUAL')}
+            className={`btn-toggle ${localState.speedMode === 'MANUAL' ? 'active' : ''}`}
+            onClick={() => setLocalState(prev => ({ ...prev, speedMode: 'MANUAL' }))}
           >
             MANUAL MACH TARGET
           </button>
@@ -104,16 +119,15 @@ export default function CalculatorCruise() {
 
       <div className="panel-body grid-2col">
         <div className="input-section glass-panel">
-          <h3>Data Entry</h3>
+          <h3>Aircraft State & Atmospheric Data</h3>
 
           <div className="input-grid-spatial">
             <div className="input-cell-spatial">
               <label>Gross Weight (lbs)</label>
               <input 
                 type="number" 
-                key={`weight-${mission.weight}`}
                 defaultValue={mission.weight}
-                onBlur={(e) => updateMissionField('weight', e.target.value, 60000, 150000)}
+                onBlur={(e) => updateMissionField('weight', e.target.value)}
                 className="touch-input-field"
               />
             </div>
@@ -122,69 +136,73 @@ export default function CalculatorCruise() {
               <label>Flight Level (FL)</label>
               <input 
                 type="number" 
-                key={`fl-${mission.cruiseFL}`}
                 defaultValue={mission.cruiseFL}
-                onBlur={(e) => updateMissionField('cruiseFL', e.target.value, 280, maxOperatingFL)}
+                onBlur={(e) => updateMissionField('cruiseFL', e.target.value)}
                 className="touch-input-field"
               />
             </div>
 
-            {mission.speedMode === 'ECON' ? (
-              <div className="input-grid-spatial" style={{ gridColumn: 'span 2', gap: '20px' }}>
-                <div className="input-cell-spatial">
-                  <label>Cost Index (CI)</label>
-                  <input 
-                    type="number" 
-                    key={`ci-${mission.costIndex}`}
-                    defaultValue={mission.costIndex}
-                    onBlur={(e) => updateMissionField('costIndex', e.target.value, 0, 120)}
-                    className="touch-input-field"
-                  />
-                </div>
-                <div className="input-cell-spatial">
-                  <label>Wind Velocity (kt)</label>
-                  <input 
-                    type="number" 
-                    key={`wind-${mission.wind}`}
-                    defaultValue={mission.wind}
-                    onBlur={(e) => updateMissionField('wind', e.target.value, -200, 200)}
-                    className="touch-input-field"
-                  />
-                </div>
+            {localState.speedMode === 'ECON' ? (
+              <div className="input-cell-spatial">
+                <label>Cost Index (CI)</label>
+                <input 
+                  type="number" 
+                  defaultValue={mission.costIndex}
+                  onBlur={(e) => updateMissionField('costIndex', e.target.value)}
+                  className="touch-input-field"
+                />
               </div>
             ) : (
-              <div className="input-grid-spatial" style={{ gridColumn: 'span 2', gap: '20px' }}>
-                <div className="input-cell-spatial">
-                  <label>Selected Mach</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    key={`mach-${mission.manualMach}`}
-                    defaultValue={mission.manualMach}
-                    onBlur={(e) => updateMissionField('manualMach', e.target.value, 0.70, 0.82)}
-                    className="touch-input-field"
-                  />
-                </div>
-                <div className="input-cell-spatial">
-                  <label>Wind Velocity (kt)</label>
-                  <input 
-                    type="number" 
-                    key={`wind-${mission.wind}`}
-                    defaultValue={mission.wind}
-                    onBlur={(e) => updateMissionField('wind', e.target.value, -200, 200)}
-                    className="touch-input-field"
-                  />
-                </div>
+              <div className="input-cell-spatial">
+                <label>Target Mach</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  defaultValue={localState.manualMach}
+                  onBlur={(e) => handleLocalEntry('manualMach', e.target.value, 0.70, 0.82)}
+                  className="touch-input-field"
+                />
               </div>
             )}
 
-            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
+            <div className="input-cell-spatial">
               <label>ISA Deviation (°C)</label>
               <input 
                 type="number" 
-                key={`isa-${mission.isaDev}`}
                 defaultValue={mission.isaDev}
-                onBlur={(e) => updateMissionField('isaDev', e.target.value, -30, 30)}
+                onBlur={(e) => updateMissionField('isaDev', e.target.value)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>CG Index (% MAC)</label>
+              <input 
+                type="number" 
+                step="0.1"
+                defaultValue={localState.cgMac}
+                onBlur={(e) => handleLocalEntry('cgMac', e.target.value, 10, 40)}
+                className="touch-input-field"
+              />
+            </div>
+
+            <div className="input-cell-spatial">
+              <label>MEL/CDL Penalty (%)</label>
+              <input 
+                type="number" 
+                step="0.1"
+                defaultValue={localState.dragPenalty}
+                onBlur={(e) => handleLocalEntry('dragPenalty', e.target.value, 0, 15)}
+                className="touch-input-field"
+              />
+            </div>
+            
+            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
+              <label>Enroute Wind (kt)</label>
+              <input 
+                type="number" 
+                defaultValue={mission.wind}
+                onBlur={(e) => updateMissionField('wind', e.target.value)}
                 className="touch-input-field"
               />
             </div>
@@ -197,104 +215,49 @@ export default function CalculatorCruise() {
                 checked={mission.antiIce} 
                 onChange={(e) => updateMissionField('antiIce', e.target.checked)} 
               />
-              <span className="toggle-label">Engine Bleed Anti-Ice active</span>
+              <span className="toggle-label">Engine Bleed Anti-Ice ACTIVE</span>
             </label>
           </div>
         </div>
 
         <div className="results-section glass-panel highlight-accent">
-          <h3>Calculated Flight Deck Targets</h3>
+          <h3>Flight Deck Cruise Targets</h3>
+
           <div className="metrics-summary">
             <div className="metric-box">
-              <span className="label">Target Profile Speed</span>
+              <span className="label">Target Speed</span>
               <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>
-                {isOutOfEnvelope ? 'BUFFET LIMIT' : hasIncompleteInputs ? '---' : `M ${resolvedMach.toFixed(2)}`}
+                {isOutOfEnvelope ? 'BUFFET LIMIT' : `M ${resolvedMach.toFixed(2)}`}
               </span>
             </div>
             <div className="metric-box">
-              <span className="label">Total Fuel Flow</span>
-              <span className="value">{hasIncompleteInputs ? "---" : `${fuelFlowLbs.toLocaleString()} lbs/h`}</span>
+              <span className="label">Fuel Flow</span>
+              <span className="value">{fuelFlowLbs.toLocaleString()} lbs/h</span>
             </div>
             <div className="metric-box">
               <span className="label">Specific Range</span>
-              <span className="value">{hasIncompleteInputs ? "---" : `${specificRange.toFixed(3)} NM/lb`}</span>
+              <span className="value">{specificRange.toFixed(3)} NM/lb</span>
             </div>
           </div>
 
           <div className="performance-table">
-            <div className="table-row"><span>Optimal Profile Level</span><span className="val highlight">{hasIncompleteInputs ? "---" : `FL ${optimalFL}`}</span></div>
-            <div className="table-row"><span>True Airspeed (TAS)</span><span>{hasIncompleteInputs ? "---" : `${tas} kt`}</span></div>
-            <div className="table-row"><span>Ground Speed (GS)</span><span>{hasIncompleteInputs ? "---" : `${gs} kt`}</span></div>
-            <div className="table-row"><span>Max Operating Altitude</span><span>{hasIncompleteInputs ? "---" : `FL ${maxOperatingFL}`}</span></div>
+            <div className="table-row"><span>Optimal Altitude</span><span className="val highlight">FL {optimalFL}</span></div>
+            <div className="table-row"><span>True Airspeed (TAS)</span><span>{tas} kt</span></div>
+            <div className="table-row"><span>Ground Speed (GS)</span><span>{gs} kt</span></div>
+            <div className="table-row"><span>Max Operating Limit</span><span>FL {maxOperatingFL}</span></div>
           </div>
-        </div>
-      </div>
 
-      {/* Trip Planning & Fuel Burn Section */}
-      <div className="glass-panel" style={{ marginTop: '24px' }}>
-        <h3>Trip Planning & Fuel Burn</h3>
-        <div className="input-grid-spatial">
-          <div className="input-cell-spatial">
-            <label>Trip Distance (NM)</label>
-            <input 
-              type="number" 
-              key={`dist-${mission.tripDistance}`}
-              defaultValue={mission.tripDistance}
-              onBlur={(e) => updateMissionField('tripDistance', e.target.value, 0, 9999)}
-              className="touch-input-field"
-            />
-          </div>
-          <div className="input-cell-spatial">
-            <label>Planned Fuel Burn (lbs)</label>
-            <input 
-              type="number" 
-              key={`pfb-${mission.plannedFuelBurn}`}
-              defaultValue={mission.plannedFuelBurn}
-              onBlur={(e) => updateMissionField('plannedFuelBurn', e.target.value, 0, 50000)}
-              className="touch-input-field"
-            />
-          </div>
-        </div>
-
-        {(hasTripDistance || hasPlannedFuel) && (
-          <div style={{ marginTop: '20px' }}>
-            <div className="metrics-summary">
-              <div className="metric-box">
-                <span className="label">Est. Time Enroute</span>
-                <span className="value">{canCalcTrip ? eteFormatted : "---"}</span>
-              </div>
-              <div className="metric-box">
-                <span className="label">Calc. Fuel Required</span>
-                <span className="value">{canCalcTrip ? `${calcFuelRequired.toLocaleString()} lbs` : "---"}</span>
-              </div>
-              <div className="metric-box">
-                <span className="label">Fuel Variance</span>
-                <span className="value" style={{ 
-                  color: fuelVariance === null ? 'var(--accent-cyan)' 
-                    : fuelVariance >= 0 ? 'var(--accent-green)' 
-                    : 'var(--accent-crit)' 
-                }}>
-                  {fuelVariance === null ? "---" 
-                    : fuelVariance >= 0 ? `+${fuelVariance.toLocaleString()} lbs` 
-                    : `${fuelVariance.toLocaleString()} lbs`}
-                </span>
-              </div>
-            </div>
-
-            {fuelVariance !== null && fuelVariance < 0 && (
-              <div className="alert-banner danger" style={{ marginTop: '12px' }}>
-                ⚠️ FUEL SHORTFALL — Calculated burn exceeds planned fuel by {Math.abs(fuelVariance).toLocaleString()} lbs. Verify dispatch figures.
-              </div>
+          <div className="alert-banner info" style={{ marginTop: '24px' }}>
+            {weightToBurn > 0 ? (
+              <span><strong>Step-Climb Advisor:</strong> Aircraft is too heavy for FL{nextStepFL}. Burn <strong>{weightToBurn.toLocaleString()} lbs</strong> (approx. {Math.round(timeToStepMin)} min) to reach aerodynamic step weight of {stepClimbWeight.toLocaleString()} lbs.</span>
+            ) : nextStepFL <= 410 ? (
+              <span><strong>Step-Climb Advisor:</strong> Aerodynamically capable of immediate step climb to <strong>FL{nextStepFL}</strong>. Check wind matrix before initiating climb.</span>
+            ) : (
+              <span><strong>Step-Climb Advisor:</strong> Currently operating at or near structural aircraft ceiling.</span>
             )}
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Compliance Reference Footer Block */}
-      <footer style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-        <span>DATA REFERENCE: FCOM PART PI-ECON (EMB-195E2)</span>
-        <span>AFM REVISION ID: REV 44 • DATABASE SYNC CYCLE: 2606</span>
-      </footer>
     </div>
   );
 }
