@@ -164,6 +164,8 @@ export default function CalculatorClimb() {
 
   if (loading || !climbPerf) return <div className="panel-container"><p>Synchronizing Climb Database...</p></div>;
 
+  const showPlaceholder = !mission.weight || mission.weight < 50000;
+
   return (
     <div className="panel-container">
       <div className="panel-header">
@@ -171,149 +173,159 @@ export default function CalculatorClimb() {
         <p>Integrates multi-tier winds, QNH offsets, and aerodynamic configurations to plot precise TOC distances.</p>
       </div>
 
-      <div className="panel-body grid-2col">
-        <div className="input-section glass-panel">
-          <h3>Departure & Atmospheric Inputs</h3>
+      {showPlaceholder ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', margin: '24px 0' }}>
+          <span style={{ fontSize: '32px', marginBottom: '16px' }}>📋</span>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: 'var(--accent-cyan)' }}>No Active Dispatch Plan</h3>
+          <p style={{ margin: '0', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '420px', lineHeight: '1.5' }}>
+            Please configure dispatch weights and fuel on the **Operations Dashboard** to initialize performance optimization models.
+          </p>
+        </div>
+      ) : (
+        <div className="panel-body grid-2col">
+          <div className="input-section glass-panel">
+            <h3>Departure & Atmospheric Inputs</h3>
 
-          <div className="input-grid-spatial">
-            {/* Column 1 */}
-            <div className="input-cell-spatial">
-              <label>Gross Weight (lbs)</label>
-              <input 
-                type="number" 
-                value={mission.weight || inputs.climbWeight}
-                disabled
-                style={{ opacity: 0.7, cursor: 'not-allowed' }}
-                className="touch-input-field"
-              />
+            <div className="input-grid-spatial">
+              {/* Column 1 */}
+              <div className="input-cell-spatial">
+                <label>Gross Weight (lbs)</label>
+                <input 
+                  type="number" 
+                  value={mission.weight || inputs.climbWeight}
+                  disabled
+                  style={{ opacity: 0.7, cursor: 'not-allowed' }}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Target Altitude (ft)</label>
+                <input 
+                  type="number" 
+                  key={inputs.targetAltitude}
+                  defaultValue={inputs.targetAltitude}
+                  onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 5000, 41000)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Field Elev (ft)</label>
+                <input 
+                  type="number" 
+                  key={inputs.fieldElevation}
+                  defaultValue={inputs.fieldElevation}
+                  onBlur={(e) => handleManualEntry('fieldElevation', e.target.value, -500, 14000)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Altimeter (QNH)</label>
+                <input 
+                  type="number" 
+                  key={inputs.qnh}
+                  step="0.01"
+                  defaultValue={inputs.qnh}
+                  onBlur={(e) => handleManualEntry('qnh', e.target.value, 28.00, 31.00)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Avg Wind &lt; FL180</label>
+                <input 
+                  type="number" 
+                  defaultValue={inputs.windBelow180}
+                  onBlur={(e) => handleManualEntry('windBelow180', e.target.value, -150, 150)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial">
+                <label>Avg Wind &gt; FL180</label>
+                <input 
+                  type="number" 
+                  defaultValue={inputs.windAbove180}
+                  onBlur={(e) => handleManualEntry('windAbove180', e.target.value, -200, 200)}
+                  className="touch-input-field"
+                />
+              </div>
+
+              <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
+                <label>ISA Deviation (°C)</label>
+                <input 
+                  type="number" 
+                  key={inputs.isaDev}
+                  defaultValue={inputs.isaDev}
+                  onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
+                  className="touch-input-field"
+                />
+              </div>
             </div>
 
-            <div className="input-cell-spatial">
-              <label>Target Altitude (ft)</label>
-              <input 
-                type="number" 
-                key={inputs.targetAltitude}
-                defaultValue={inputs.targetAltitude}
-                onBlur={(e) => handleManualEntry('targetAltitude', e.target.value, 5000, 41000)}
-                className="touch-input-field"
-              />
-            </div>
+            {/* Configuration Toggles */}
+            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="input-group-toggle">
+                <label className="toggle-container">
+                  <input 
+                    type="checkbox" 
+                    checked={inputs.atcSpeedRestriction} 
+                    onChange={(e) => setInputs(prev => ({ ...prev, atcSpeedRestriction: e.target.checked }))} 
+                  />
+                  <span className="toggle-label">ATC Restriction: Max 250 KIAS &lt; 10,000 ft</span>
+                </label>
+              </div>
 
-            <div className="input-cell-spatial">
-              <label>Field Elev (ft)</label>
-              <input 
-                type="number" 
-                key={inputs.fieldElevation}
-                defaultValue={inputs.fieldElevation}
-                onBlur={(e) => handleManualEntry('fieldElevation', e.target.value, -500, 14000)}
-                className="touch-input-field"
-              />
-            </div>
-
-            <div className="input-cell-spatial">
-              <label>Altimeter (QNH)</label>
-              <input 
-                type="number" 
-                key={inputs.qnh}
-                step="0.01"
-                defaultValue={inputs.qnh}
-                onBlur={(e) => handleManualEntry('qnh', e.target.value, 28.00, 31.00)}
-                className="touch-input-field"
-              />
-            </div>
-
-            <div className="input-cell-spatial">
-              <label>Avg Wind &lt; FL180</label>
-              <input 
-                type="number" 
-                defaultValue={inputs.windBelow180}
-                onBlur={(e) => handleManualEntry('windBelow180', e.target.value, -150, 150)}
-                className="touch-input-field"
-              />
-            </div>
-
-            <div className="input-cell-spatial">
-              <label>Avg Wind &gt; FL180</label>
-              <input 
-                type="number" 
-                defaultValue={inputs.windAbove180}
-                onBlur={(e) => handleManualEntry('windAbove180', e.target.value, -200, 200)}
-                className="touch-input-field"
-              />
-            </div>
-
-            <div className="input-cell-spatial" style={{ gridColumn: 'span 2' }}>
-              <label>ISA Deviation (°C)</label>
-              <input 
-                type="number" 
-                key={inputs.isaDev}
-                defaultValue={inputs.isaDev}
-                onBlur={(e) => handleManualEntry('isaDev', e.target.value, -30, 30)}
-                className="touch-input-field"
-              />
+              <div className="input-group-toggle">
+                <label className="toggle-container">
+                  <input 
+                    type="checkbox" 
+                    checked={inputs.antiIce} 
+                    onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+                  />
+                  <span className="toggle-label">Engine/Wing Anti-Ice ACTIVE (Bleed Penalty)</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Configuration Toggles */}
-          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="input-group-toggle">
-              <label className="toggle-container">
-                <input 
-                  type="checkbox" 
-                  checked={inputs.atcSpeedRestriction} 
-                  onChange={(e) => setInputs(prev => ({ ...prev, atcSpeedRestriction: e.target.checked }))} 
-                />
-                <span className="toggle-label">ATC Restriction: Max 250 KIAS &lt; 10,000 ft</span>
-              </label>
+          <div className="results-section glass-panel highlight-accent">
+            <h3>Top of Climb (TOC) Output</h3>
+            <div className="metrics-summary">
+              <div className="metric-box">
+                <span className="label">Time to Climb</span>
+                <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${timeToClimb} min`}</span>
+              </div>
+              <div className="metric-box">
+                <span className="label">Fuel Burned</span>
+                <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${fuelBurned.toLocaleString()} lbs`}</span>
+              </div>
+              <div className="metric-box">
+                <span className="label">Ground Distance</span>
+                <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${climbDistance} NM`}</span>
+              </div>
             </div>
 
-            <div className="input-group-toggle">
-              <label className="toggle-container">
-                <input 
-                  type="checkbox" 
-                  checked={inputs.antiIce} 
-                  onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
-                />
-                <span className="toggle-label">Engine/Wing Anti-Ice ACTIVE (Bleed Penalty)</span>
-              </label>
+            <div className="performance-table">
+              <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
+              <div className="table-row"><span>Initial Speed Schedule</span><span>{baseClimbSpeedIAS} kt</span></div>
+              <div className="table-row"><span>Target Mach Transition</span><span>M 0.78</span></div>
+              <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{isOutOfEnvelope ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
+              <div className="table-row"><span>Effective Pressure Altitude</span><span>{effectiveClimbAlt.toLocaleString()} ft</span></div>
+            </div>
+
+            <div className="alert-banner info" style={{ marginTop: '24px' }}>
+              {isOutOfEnvelope ? (
+                <span className="text-danger"><strong>WARNING:</strong> Flight configuration exceeds performance envelope boundaries. Lower the gross weight or target flight level.</span>
+              ) : (
+                <span><strong>Profile Note:</strong> Multi-tier wind integration active. Net atmospheric displacement tracking <strong>{Math.round(totalWindDisplacement)} NM</strong> against still-air baseline.</span>
+              )}
             </div>
           </div>
         </div>
-
-        <div className="results-section glass-panel highlight-accent">
-          <h3>Top of Climb (TOC) Output</h3>
-          <div className="metrics-summary">
-            <div className="metric-box">
-              <span className="label">Time to Climb</span>
-              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${timeToClimb} min`}</span>
-            </div>
-            <div className="metric-box">
-              <span className="label">Fuel Burned</span>
-              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${fuelBurned.toLocaleString()} lbs`}</span>
-            </div>
-            <div className="metric-box">
-              <span className="label">Ground Distance</span>
-              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${climbDistance} NM`}</span>
-            </div>
-          </div>
-
-          <div className="performance-table">
-            <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
-            <div className="table-row"><span>Initial Speed Schedule</span><span>{baseClimbSpeedIAS} kt</span></div>
-            <div className="table-row"><span>Target Mach Transition</span><span>M 0.78</span></div>
-            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{isOutOfEnvelope ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
-            <div className="table-row"><span>Effective Pressure Altitude</span><span>{effectiveClimbAlt.toLocaleString()} ft</span></div>
-          </div>
-
-          <div className="alert-banner info" style={{ marginTop: '24px' }}>
-            {isOutOfEnvelope ? (
-              <span className="text-danger"><strong>WARNING:</strong> Flight configuration exceeds performance envelope boundaries. Lower the gross weight or target flight level.</span>
-            ) : (
-              <span><strong>Profile Note:</strong> Multi-tier wind integration active. Net atmospheric displacement tracking <strong>{Math.round(totalWindDisplacement)} NM</strong> against still-air baseline.</span>
-            )}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

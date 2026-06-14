@@ -95,6 +95,8 @@ export default function CalculatorCruise() {
 
   if (loading) return <div className="panel-container"><p>Synchronizing Performance Matrix...</p></div>;
 
+  const showPlaceholder = !mission.weight || mission.weight < 50000;
+
   return (
     <div className="panel-container">
       <div className="panel-header">
@@ -117,8 +119,17 @@ export default function CalculatorCruise() {
         </div>
       </div>
 
-      <div className="panel-body grid-2col">
-        <div className="input-section glass-panel">
+      {showPlaceholder ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', margin: '24px 0' }}>
+          <span style={{ fontSize: '32px', marginBottom: '16px' }}>📋</span>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: 'var(--accent-cyan)' }}>No Active Dispatch Plan</h3>
+          <p style={{ margin: '0', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '420px', lineHeight: '1.5' }}>
+            Please configure dispatch weights and fuel on the **Operations Dashboard** to initialize performance optimization models.
+          </p>
+        </div>
+      ) : (
+        <div className="panel-body grid-2col">
+          <div className="input-section glass-panel">
           <h3>Aircraft State & Atmospheric Data</h3>
 
           <div className="input-grid-spatial">
@@ -261,6 +272,7 @@ export default function CalculatorCruise() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
