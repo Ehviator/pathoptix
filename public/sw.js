@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathoptix-v5';
+const CACHE_NAME = 'pathoptix-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,6 +8,7 @@ const ASSETS_TO_CACHE = [
   '/data/descent_fpa.json',
   '/data/holding_endurance.json',
   '/data/driftdown_oei.json',
+  '/data/airways_db.json',
   '/images/marker-icon.png',
   '/images/marker-icon-2x.png',
   '/images/marker-shadow.png'

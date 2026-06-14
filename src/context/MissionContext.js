@@ -42,6 +42,7 @@ export function MissionProvider({ children }) {
   const [cruiseMatrix, setCruiseMatrix] = useState(null);
   const [climbPerf, setClimbPerf] = useState(null);
   const [descentPerf, setDescentPerf] = useState(null);
+  const [airwaysDb, setAirwaysDb] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Global Flight Log and Distance States
@@ -61,13 +62,15 @@ export function MissionProvider({ children }) {
       fetch('/data/nav_db.json').then(res => res.json()),
       fetch('/data/cruise_econ.json').then(res => res.json()),
       fetch('/data/climb_perf.json').then(res => res.json()),
-      fetch('/data/descent_fpa.json').then(res => res.json())
+      fetch('/data/descent_fpa.json').then(res => res.json()),
+      fetch('/data/airways_db.json').then(res => res.json())
     ])
-    .then(([navs, cruise, climb, descent]) => {
+    .then(([navs, cruise, climb, descent, airways]) => {
       setNavDb(navs);
       setCruiseMatrix(cruise);
       setClimbPerf(climb);
       setDescentPerf(descent);
+      setAirwaysDb(airways);
       setLoading(false);
     })
     .catch(err => {
@@ -77,63 +80,102 @@ export function MissionProvider({ children }) {
   }, []);
 
   // Non-destructive flight route parser & reconciliation algorithm
-  const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL) => {
+  const parseFlightRoute = (routeString, currentNavLog, database, cruiseFL, airways) => {
     if (!database || !database.waypoints) return { newLog: [], newDistance: 0 };
 
     const elements = routeString.toUpperCase().trim().split(/\s+/).filter(Boolean);
-    const newLog = [];
-    let accumulatedDistance = 0;
-    const consumedIndices = new Set();
+    const waypointsToLog = [];
 
     for (let i = 0; i < elements.length; i++) {
       const ident = elements[i];
       if (database.waypoints[ident]) {
-        const fix = database.waypoints[ident];
-        
-        let legDist = 0;
-        if (i > 0 && database.waypoints[elements[i-1]]) {
-          const prevFix = database.waypoints[elements[i-1]];
-          legDist = calculateDistanceNM(prevFix.lat, prevFix.lon, fix.lat, fix.lon);
-          accumulatedDistance += legDist;
-        }
+        // Check if there was an airway immediately preceding it (e.g., Waypoint, Airway, Waypoint)
+        if (i >= 2 && airways && airways[elements[i - 1]]) {
+          const airwayIdent = elements[i - 1];
+          const startWp = elements[i - 2];
+          const endWp = ident;
 
-        // Match existing waypoint in current navLog to preserve its custom pilot inputs
-        let existing = null;
-        for (let j = 0; j < currentNavLog.length; j++) {
-          if (currentNavLog[j].ident === ident && !consumedIndices.has(j)) {
-            existing = currentNavLog[j];
-            consumedIndices.add(j);
-            break;
+          const airwayWps = airways[airwayIdent];
+          if (airwayWps) {
+            const startIndex = airwayWps.indexOf(startWp);
+            const endIndex = airwayWps.indexOf(endWp);
+
+            if (startIndex !== -1 && endIndex !== -1) {
+              let intermediates = [];
+              if (startIndex < endIndex) {
+                // Moving forward along airway
+                intermediates = airwayWps.slice(startIndex + 1, endIndex);
+              } else {
+                // Moving backward along airway
+                intermediates = airwayWps.slice(endIndex + 1, startIndex).reverse();
+              }
+
+              intermediates.forEach(wpName => {
+                if (database.waypoints[wpName] && !waypointsToLog.includes(wpName)) {
+                  waypointsToLog.push(wpName);
+                }
+              });
+            }
           }
         }
 
-        if (existing) {
-          // Re-evaluate TAS/GS kinematics in case cruiseFL/SAT/wind changed, while keeping custom inputs
-          const currentTAS = estimateTAS(existing.fl, existing.sat);
-          newLog.push({
-            ...existing,
-            legDistance: legDist,
-            tas: currentTAS,
-            gs: Math.max(100, currentTAS + existing.wind)
-          });
-        } else {
-          // Initialize new waypoint with defaults
-          const initialTAS = estimateTAS(cruiseFL || 350, -45);
-          newLog.push({
-            ident,
-            type: fix.type,
-            lat: fix.lat,
-            lon: fix.lon,
-            legDistance: legDist,
-            wind: 0,
-            fl: cruiseFL || 350,
-            sat: -45,
-            tas: initialTAS,
-            gs: initialTAS,
-            plannedFuel: 5000,
-            actualFuel: 5000
-          });
+        if (!waypointsToLog.includes(ident)) {
+          waypointsToLog.push(ident);
         }
+      }
+    }
+
+    const newLog = [];
+    let accumulatedDistance = 0;
+    const consumedIndices = new Set();
+
+    for (let i = 0; i < waypointsToLog.length; i++) {
+      const ident = waypointsToLog[i];
+      const fix = database.waypoints[ident];
+      
+      let legDist = 0;
+      if (i > 0) {
+        const prevFix = database.waypoints[waypointsToLog[i - 1]];
+        legDist = calculateDistanceNM(prevFix.lat, prevFix.lon, fix.lat, fix.lon);
+        accumulatedDistance += legDist;
+      }
+
+      // Match existing waypoint in current navLog to preserve its custom pilot inputs
+      let existing = null;
+      for (let j = 0; j < currentNavLog.length; j++) {
+        if (currentNavLog[j].ident === ident && !consumedIndices.has(j)) {
+          existing = currentNavLog[j];
+          consumedIndices.add(j);
+          break;
+        }
+      }
+
+      if (existing) {
+        // Re-evaluate TAS/GS kinematics in case cruiseFL/SAT/wind changed, while keeping custom inputs
+        const currentTAS = estimateTAS(existing.fl, existing.sat);
+        newLog.push({
+          ...existing,
+          legDistance: legDist,
+          tas: currentTAS,
+          gs: Math.max(100, currentTAS + existing.wind)
+        });
+      } else {
+        // Initialize new waypoint with defaults
+        const initialTAS = estimateTAS(cruiseFL || 350, -45);
+        newLog.push({
+          ident,
+          type: fix.type,
+          lat: fix.lat,
+          lon: fix.lon,
+          legDistance: legDist,
+          wind: 0,
+          fl: cruiseFL || 350,
+          sat: -45,
+          tas: initialTAS,
+          gs: initialTAS,
+          plannedFuel: 5000,
+          actualFuel: 5000
+        });
       }
     }
 
@@ -149,7 +191,7 @@ export function MissionProvider({ children }) {
   // Synchronize NavLog when routeString, cruiseFL, or navDb changes
   useEffect(() => {
     if (navDb) {
-      const { newLog, newDistance } = parseFlightRoute(mission.routeString, navLogRef.current, navDb, mission.cruiseFL);
+      const { newLog, newDistance } = parseFlightRoute(mission.routeString, navLogRef.current, navDb, mission.cruiseFL, airwaysDb);
       setNavLog(newLog);
       setTotalDistance(newDistance);
 
@@ -166,7 +208,7 @@ export function MissionProvider({ children }) {
         });
       }
     }
-  }, [navDb, mission.routeString, mission.cruiseFL]);
+  }, [navDb, mission.routeString, mission.cruiseFL, airwaysDb]);
 
   // Keep routeString synchronized with departure and arrival changes
   useEffect(() => {
