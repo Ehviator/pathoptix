@@ -5,6 +5,13 @@ import { getTASFromMach } from '../engine/atmospheric.js';
 import { fetchAirportWeather } from '../services/awcApi.js';
 import { enrichAirport } from '../services/airportService.js';
 import { useDatabase } from './DatabaseContext.js';
+import {
+  calculateContingencyFuel,
+  calculateAlternateFuel,
+  calculateFinalReserveFuel,
+  calculateRequiredBlockFuel,
+  validateWeights,
+} from '../engine/fuelLegality.js';
 
 // Minimum characters for a valid ICAO airport code (3 = VFR, 4 = IFR standard)
 const isValidAirportCode = (code) => /^[A-Z]{3,4}$/.test(code?.trim() ?? '');
@@ -257,7 +264,8 @@ export function MissionProvider({ children }) {
     averageWindDir: '',
     averageWindSpeed: '',
     registration: '',
-    plannedEte: ''
+    plannedEte: '',
+    rampFuel: '',
   });
 
   const [unresolvedElements, setUnresolvedElements] = useState([]);
@@ -460,9 +468,9 @@ export function MissionProvider({ children }) {
   // Operations Math and Legal Fuel Calculations
   const takeoffWeight = (mission.zeroFuelWeight || 0) + (mission.blockFuel || 0) - (mission.taxiFuel || 0);
 
-  // CARs 705 Calculated Legal Reserves
-  const tripFuelCalc = mission.plannedFuelBurn || 0;
-  const contingencyFuelCalc = Math.round(tripFuelCalc * 0.05);
+  // CARs 705 Calculated Legal Reserves (pure engine functions)
+  const tripFuelCalc         = mission.plannedFuelBurn || 0;
+  const contingencyFuelCalc  = calculateContingencyFuel(tripFuelCalc);
 
   let alternateDistance = 0;
   if (airportDb && airportDb.airports && mission.arrival && mission.alternate) {
@@ -476,12 +484,22 @@ export function MissionProvider({ children }) {
     }
   }
 
-  const alternateFuelCalc = alternateDistance > 0 ? Math.round(alternateDistance * 12.5 + 400) : 0;
-  const finalReserveFuelCalc = Math.round(1150 + 0.005 * takeoffWeight);
-  const requiredBlockFuel = (mission.taxiFuel || 0) + tripFuelCalc + contingencyFuelCalc + alternateFuelCalc + finalReserveFuelCalc;
+  const alternateFuelCalc   = calculateAlternateFuel(alternateDistance, takeoffWeight);
+  const finalReserveFuelCalc = calculateFinalReserveFuel(takeoffWeight);
+  const requiredBlockFuel    = calculateRequiredBlockFuel(
+    mission.taxiFuel || 0, tripFuelCalc, contingencyFuelCalc, alternateFuelCalc, finalReserveFuelCalc
+  );
   const isBlockFuelSufficient = (mission.blockFuel || 0) >= requiredBlockFuel;
 
   const minimumDiversionFuel = (mission.alternateFuel || 0) + (mission.finalReserveFuel || 0);
+
+  // Structural weight compliance checks (E195-E2 limits)
+  const landingWeight   = Math.max(0, takeoffWeight - tripFuelCalc);
+  const weightViolations = validateWeights({
+    zfw:           mission.zeroFuelWeight || 0,
+    tow:           takeoffWeight,
+    landingWeight,
+  });
 
   // Wrap mission with calculated takeoffWeight to prevent breaking downstream performance equations
   const missionWithWeight = {
@@ -501,10 +519,10 @@ export function MissionProvider({ children }) {
 
       const numericKeys = [
         'zeroFuelWeight', 'blockFuel', 'taxiFuel', 'alternateFuel', 'finalReserveFuel',
-        'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 
-        'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 
+        'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude',
+        'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn',
         'climbFL', 'departureElev', 'departureQnh', 'arrivalQnh', 'arrivalElev', 'arrivalOat',
-        'pax', 'mac', 'averageWindDir', 'averageWindSpeed', 'plannedEte'
+        'pax', 'mac', 'averageWindDir', 'averageWindSpeed', 'plannedEte', 'rampFuel'
       ];
 
       if (numericKeys.includes(key)) {
@@ -530,10 +548,10 @@ export function MissionProvider({ children }) {
       const next = { ...prev };
       const numericKeys = [
         'zeroFuelWeight', 'blockFuel', 'taxiFuel', 'alternateFuel', 'finalReserveFuel',
-        'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 
-        'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn', 
+        'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude',
+        'descentSpeed', 'fpa', 'manualMach', 'wind', 'tripDistance', 'plannedFuelBurn',
         'climbFL', 'departureElev', 'departureQnh', 'arrivalQnh', 'arrivalElev', 'arrivalOat',
-        'pax', 'mac', 'averageWindDir', 'averageWindSpeed', 'plannedEte'
+        'pax', 'mac', 'averageWindDir', 'averageWindSpeed', 'plannedEte', 'rampFuel'
       ];
 
       Object.entries(fields).forEach(([key, value]) => {
@@ -624,6 +642,8 @@ export function MissionProvider({ children }) {
       finalReserveFuelCalc,
       requiredBlockFuel,
       isBlockFuelSufficient,
+      weightViolations,
+      landingWeight,
       driftdownDb,
       terrainDb
     }}>
