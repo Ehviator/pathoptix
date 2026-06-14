@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useMission } from '../context/MissionContext.js';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
 import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
-import { calculateClimbPerformance } from '../engine/kinematics.js';
+import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
 
 export default function CalculatorClimb() {
+  const { climbPerf, loading } = useMission();
+
   const [inputs, setInputs] = useState({
     climbWeight: 115000, 
     targetAltitude: 35000, 
@@ -36,14 +39,114 @@ export default function CalculatorClimb() {
   const trueFieldAlt = calculateTruePressureAlt(inputs.fieldElevation, inputs.qnh);
   const effectiveClimbAlt = Math.max(0, trueTargetAlt - trueFieldAlt);
   
-  // Climb Heuristics
-  const {
-    timeToClimb,
-    fuelBurned,
-    climbDistance,
-    averageROC,
-    totalWindDisplacement
-  } = calculateClimbPerformance(inputs, effectiveClimbAlt);
+  // Matrix-based climb performance lookup
+  const getClimbPerfForAlt = (alt, weight, isaDev) => {
+    if (!climbPerf || !climbPerf.climb_profiles) return null;
+    if (alt <= 0) return { time: 0, fuel: 0, dist: 0 };
+
+    const profiles = climbPerf.climb_profiles;
+    const altKeys = Object.keys(profiles).map(Number).sort((a, b) => a - b);
+
+    // If altitude is below the first tier (15,000 ft), interpolate between Sea Level (0) and 15,000 ft
+    if (alt < altKeys[0]) {
+      const altHigh = altKeys[0];
+      const profileHigh = profiles[altHigh.toString()];
+
+      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
+      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
+      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
+
+      if (timeHigh === null || fuelHigh === null || distHigh === null) {
+        return null;
+      }
+
+      return {
+        time: interpolate1D(alt, 0, altHigh, 0, timeHigh),
+        fuel: interpolate1D(alt, 0, altHigh, 0, fuelHigh),
+        dist: interpolate1D(alt, 0, altHigh, 0, distHigh)
+      };
+    }
+
+    // Bracket standard altitude search
+    let altLow = altKeys[0];
+    let altHigh = altKeys[altKeys.length - 1];
+
+    if (alt >= altKeys[altKeys.length - 1]) {
+      altLow = altHigh = altKeys[altKeys.length - 1];
+    } else {
+      for (let i = 0; i < altKeys.length - 1; i++) {
+        if (alt >= altKeys[i] && alt <= altKeys[i + 1]) {
+          altLow = altKeys[i];
+          altHigh = altKeys[i + 1];
+          break;
+        }
+      }
+    }
+
+    const profileLow = profiles[altLow.toString()];
+    const profileHigh = profiles[altHigh.toString()];
+
+    const timeLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.time_min);
+    const fuelLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.fuel_lbs);
+    const distLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.distance_nm);
+
+    if (altLow === altHigh) {
+      if (timeLow === null || fuelLow === null || distLow === null) {
+        return null;
+      }
+      return { time: timeLow, fuel: fuelLow, dist: distLow };
+    } else {
+      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
+      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
+      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
+
+      if (timeLow === null || timeHigh === null || fuelLow === null || fuelHigh === null || distLow === null || distHigh === null) {
+        return null;
+      }
+      return {
+        time: interpolate1D(alt, altLow, altHigh, timeLow, timeHigh),
+        fuel: interpolate1D(alt, altLow, altHigh, fuelLow, fuelHigh),
+        dist: interpolate1D(alt, altLow, altHigh, distLow, distHigh)
+      };
+    }
+  };
+
+  let timeToClimb = "---";
+  let fuelBurned = "---";
+  let climbDistance = "---";
+  let isOutOfEnvelope = false;
+  let totalWindDisplacement = 0;
+
+  const perfTarget = getClimbPerfForAlt(trueTargetAlt, inputs.climbWeight, inputs.isaDev);
+  const perfField = getClimbPerfForAlt(trueFieldAlt, inputs.climbWeight, inputs.isaDev);
+
+  if (perfTarget === null || perfField === null) {
+    isOutOfEnvelope = true;
+  } else if (perfTarget && perfField) {
+    const rawTime = perfTarget.time - perfField.time;
+    const rawFuel = perfTarget.fuel - perfField.fuel;
+    const rawDist = perfTarget.dist - perfField.dist;
+
+    const atcPenaltyTime = inputs.atcSpeedRestriction && effectiveClimbAlt > 10000 ? 1.8 : 0;
+    const antiIcePenaltyTime = inputs.antiIce ? (effectiveClimbAlt / 1000) * 0.06 : 0;
+    const antiIceFuelPenalty = inputs.antiIce ? (effectiveClimbAlt / 1000) * 14 : 0;
+
+    timeToClimb = Math.max(1, Math.round(rawTime + atcPenaltyTime + antiIcePenaltyTime));
+    fuelBurned = Math.round(rawFuel + antiIceFuelPenalty);
+    
+    // Wind factor on distance
+    const timeBelow180 = Math.min(timeToClimb, 10);
+    const timeAbove180 = Math.max(0, timeToClimb - 10);
+    const windEffectBelow = (inputs.windBelow180 * (timeBelow180 / 60));
+    const windEffectAbove = (inputs.windAbove180 * (timeAbove180 / 60));
+    totalWindDisplacement = windEffectBelow + windEffectAbove;
+
+    climbDistance = Math.max(5, Math.round(rawDist + totalWindDisplacement));
+  }
+
+  const averageROC = timeToClimb > 0 && !isOutOfEnvelope ? Math.round(effectiveClimbAlt / timeToClimb) : 0;
+
+  if (loading || !climbPerf) return <div className="panel-container"><p>Synchronizing Climb Database...</p></div>;
 
   return (
     <div className="panel-container">
@@ -161,15 +264,15 @@ export default function CalculatorClimb() {
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Time to Climb</span>
-              <span className="value">{timeToClimb} min</span>
+              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${timeToClimb} min`}</span>
             </div>
             <div className="metric-box">
               <span className="label">Fuel Burned</span>
-              <span className="value">{fuelBurned.toLocaleString()} lbs</span>
+              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${fuelBurned.toLocaleString()} lbs`}</span>
             </div>
             <div className="metric-box">
               <span className="label">Ground Distance</span>
-              <span className="value">{climbDistance} NM</span>
+              <span className="value">{isOutOfEnvelope ? "EXCEEDS ENVELOPE" : `${climbDistance} NM`}</span>
             </div>
           </div>
 
@@ -177,12 +280,16 @@ export default function CalculatorClimb() {
             <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
             <div className="table-row"><span>Initial Speed Schedule</span><span>{baseClimbSpeedIAS} kt</span></div>
             <div className="table-row"><span>Target Mach Transition</span><span>M 0.78</span></div>
-            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>+{averageROC.toLocaleString()} ft/min</span></div>
+            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{isOutOfEnvelope ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
             <div className="table-row"><span>Effective Pressure Altitude</span><span>{effectiveClimbAlt.toLocaleString()} ft</span></div>
           </div>
 
           <div className="alert-banner info" style={{ marginTop: '24px' }}>
-            <span><strong>Profile Note:</strong> Multi-tier wind integration active. Net atmospheric displacement tracking <strong>{Math.round(totalWindDisplacement)} NM</strong> against still-air baseline.</span>
+            {isOutOfEnvelope ? (
+              <span className="text-danger"><strong>WARNING:</strong> Flight configuration exceeds performance envelope boundaries. Lower the gross weight or target flight level.</span>
+            ) : (
+              <span><strong>Profile Note:</strong> Multi-tier wind integration active. Net atmospheric displacement tracking <strong>{Math.round(totalWindDisplacement)} NM</strong> against still-air baseline.</span>
+            )}
           </div>
         </div>
       </div>

@@ -70,3 +70,27 @@ export function getTASFromMach(mach, tempC) {
   const speedOfSound = getSpeedOfSound(tempC);
   return mach * speedOfSound;
 }
+
+/**
+ * Calculates standard ICAO altimetry cold temperature correction.
+ * Based on ICAO Doc 8168 formula.
+ * If the destination OAT is 0°C or below, returns the corrected indicated altitude
+ * required to maintain the target geometric altitude.
+ * 
+ * @param {number} targetAltitude - Target geometric altitude in feet
+ * @param {number} fieldElevation - Field elevation in feet
+ * @param {number} destinationOAT - Outside air temperature in °C
+ * @returns {number} Corrected indicated altitude in feet
+ */
+export function calculateColdTempCorrection(targetAltitude, fieldElevation, destinationOAT) {
+  if (destinationOAT > 0) {
+    return targetAltitude;
+  }
+  const height = targetAltitude - fieldElevation;
+  if (height <= 0) return targetAltitude;
+  
+  // Standard ICAO correction formula
+  const correction = height * ((15 - destinationOAT) / (273.15 + destinationOAT - 0.5 * 0.00198 * height));
+  return Math.round(targetAltitude + correction);
+}
+
