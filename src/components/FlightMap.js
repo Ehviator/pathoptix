@@ -20,6 +20,7 @@ export default function FlightMap() {
 
   const [map, setMap] = useState(null);
   const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
 
@@ -76,9 +77,8 @@ export default function FlightMap() {
   useEffect(() => {
     if (loading) return;
 
-    let localMap = null;
     if (!map && mapContainerRef.current) {
-      localMap = L.map(mapContainerRef.current, {
+      const localMap = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false
       }).setView([44.5, -76.5], 6);
@@ -87,17 +87,20 @@ export default function FlightMap() {
         attribution: '&copy; CartoDB'
       }).addTo(localMap);
 
+      mapRef.current = localMap;
       setMap(localMap);
     }
-
-    // Unmount cleanup
-    return () => {
-      if (localMap) {
-        localMap.remove();
-      }
-      setMap(null);
-    };
   }, [loading, map]);
+
+  // Unmount cleanup hook (runs ONLY on component unmount to remove map cleanly)
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   // Update map polyline paths and markers when map instance, coords, or navLog updates
   useEffect(() => {
