@@ -164,35 +164,88 @@ export default function ReviewFuel() {
           </div>
 
           <div className="performance-table">
+            <div className="table-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px', fontWeight: '700', color: 'var(--text-secondary)', background: 'transparent' }}>
+              <span>Fuel Category</span>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <span style={{ width: '95px', textAlign: 'right' }}>Planned</span>
+                <span style={{ width: '95px', textAlign: 'right' }}>Required</span>
+              </div>
+            </div>
+
             <div className="table-row">
               <span>Planned Trip Fuel Burn</span>
-              <span>{tripFuelCalc.toLocaleString()} lbs</span>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <span style={{ width: '95px', textAlign: 'right', color: '#fff' }} className="num-val">{(mission.plannedFuelBurn || 0).toLocaleString()} lbs</span>
+                <span style={{ width: '95px', textAlign: 'right', color: 'var(--text-secondary)' }} className="num-val">{tripFuelCalc.toLocaleString()} lbs</span>
+              </div>
             </div>
+
             <div className="table-row">
               <span>Contingency Fuel (5%)</span>
-              <span>{contingencyFuelCalc.toLocaleString()} lbs</span>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <span style={{ width: '95px', textAlign: 'right', color: '#fff' }} className="num-val">{contingencyFuelCalc.toLocaleString()} lbs</span>
+                <span style={{ width: '95px', textAlign: 'right', color: 'var(--text-secondary)' }} className="num-val">{contingencyFuelCalc.toLocaleString()} lbs</span>
+              </div>
             </div>
+
             <div className="table-row">
               <span>Alternate Fuel ({alternateDistance} NM)</span>
-              <span>{alternateFuelCalc.toLocaleString()} lbs</span>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <span style={{ width: '95px', textAlign: 'right', color: (mission.alternateFuel || 0) < alternateFuelCalc ? 'var(--accent-warn)' : '#fff' }} className="num-val">
+                  {(mission.alternateFuel || 0).toLocaleString()} lbs
+                </span>
+                <span style={{ width: '95px', textAlign: 'right', color: 'var(--text-secondary)' }} className="num-val">
+                  {alternateFuelCalc.toLocaleString()} lbs
+                </span>
+              </div>
             </div>
+
             <div className="table-row">
-              <span>Final Reserve holding Fuel (30m)</span>
-              <span>{finalReserveFuelCalc.toLocaleString()} lbs</span>
+              <span>Final Reserve Fuel (30m)</span>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <span style={{ width: '95px', textAlign: 'right', color: (mission.finalReserveFuel || 0) < finalReserveFuelCalc ? 'var(--accent-warn)' : '#fff' }} className="num-val">
+                  {(mission.finalReserveFuel || 0).toLocaleString()} lbs
+                </span>
+                <span style={{ width: '95px', textAlign: 'right', color: 'var(--text-secondary)' }} className="num-val">
+                  {finalReserveFuelCalc.toLocaleString()} lbs
+                </span>
+              </div>
             </div>
+
             <div className="table-row" style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '10px', marginTop: '10px' }}>
-              <strong>Minimum Legal Block Fuel</strong>
-              <strong style={{ color: 'var(--accent-cyan)' }}>{requiredBlockFuel.toLocaleString()} lbs</strong>
+              <strong>Block Fuel / Min Legal</strong>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <strong style={{ width: '95px', textAlign: 'right', color: !isBlockFuelSufficient ? 'var(--accent-crit)' : 'var(--accent-green)' }} className="num-val">
+                  {(mission.blockFuel || 0).toLocaleString()} lbs
+                </strong>
+                <strong style={{ width: '95px', textAlign: 'right', color: 'var(--accent-cyan)' }} className="num-val">
+                  {requiredBlockFuel.toLocaleString()} lbs
+                </strong>
+              </div>
             </div>
+
             <div className="table-row">
               <strong>Minimum Diversion Fuel (MDF)</strong>
-              <strong style={{ color: 'var(--accent-warn)' }}>{minimumDiversionFuel.toLocaleString()} lbs</strong>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <strong style={{ width: '95px', textAlign: 'right', color: minimumDiversionFuel < (alternateFuelCalc + finalReserveFuelCalc) ? 'var(--accent-warn)' : '#fff' }} className="num-val">
+                  {minimumDiversionFuel.toLocaleString()} lbs
+                </strong>
+                <strong style={{ width: '95px', textAlign: 'right', color: 'var(--accent-warn)' }} className="num-val">
+                  {(alternateFuelCalc + finalReserveFuelCalc).toLocaleString()} lbs
+                </strong>
+              </div>
             </div>
+
             <div className="table-row" style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '10px', marginTop: '10px' }}>
               <strong>Destination Margin above MDF</strong>
-              <strong style={{ color: legalLandingMargin < 0 ? 'var(--accent-crit)' : 'var(--accent-green)' }}>
-                {legalLandingMargin >= 0 ? `+${legalLandingMargin.toLocaleString()}` : `${legalLandingMargin.toLocaleString()}`} lbs
-              </strong>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                <strong style={{ width: '95px', textAlign: 'right', color: legalLandingMargin < 0 ? 'var(--accent-crit)' : 'var(--accent-green)' }} className="num-val">
+                  {legalLandingMargin >= 0 ? `+${legalLandingMargin.toLocaleString()}` : `${legalLandingMargin.toLocaleString()}`} lbs
+                </strong>
+                <strong style={{ width: '95px', textAlign: 'right', color: 'var(--text-secondary)' }} className="num-val">
+                  {(projectedLandingFuel - (alternateFuelCalc + finalReserveFuelCalc)).toLocaleString()} lbs
+                </strong>
+              </div>
             </div>
           </div>
         </div>
