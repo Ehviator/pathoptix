@@ -108,11 +108,10 @@ export function estimateTAS(fl, sat) {
 }
 
 /**
- * Calculates climb performance parameters (Time, Fuel, Distance, Rate of Climb).
- * 
- * @param {Object} inputs - Climb configuration inputs
- * @param {number} effectiveClimbAlt - Calculated pressure altitude difference to climb
- * @returns {Object} Calculated climb performance outputs
+ * @deprecated Use calculateClimbProfile() from engine/climbEngine.js instead.
+ * This function uses polynomial heuristics rather than the certified climb_perf.json
+ * matrix. Retained only for backward-compatibility with tests that reference it.
+ * Will be removed in Phase 5 cleanup.
  */
 export function calculateClimbPerformance(inputs, effectiveClimbAlt) {
   const safeInputs = inputs || {};
@@ -167,12 +166,10 @@ export function calculateClimbPerformance(inputs, effectiveClimbAlt) {
 }
 
 /**
- * Calculates descent performance parameters (TOD, descent time, VSI, glide ratio, fuel flow, cabin rate).
- * 
- * @param {Object} inputs - Descent configuration inputs
- * @param {number} cruiseFL - Starting cruise FL
- * @param {number} trueTargetAlt - Corrected target pressure altitude
- * @returns {Object} Calculated descent performance outputs
+ * @deprecated Use calculateDescentProfile() from engine/descentEngine.js instead.
+ * This function uses polynomial heuristics rather than the certified descent_fpa.json
+ * matrix. Retained only for backward-compatibility with tests that reference it.
+ * Will be removed in Phase 5 cleanup.
  */
 export function calculateDescentPerformance(inputs, cruiseFL, trueTargetAlt) {
   const safeInputs = inputs || {};

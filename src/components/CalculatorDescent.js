@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
+import { useDatabase } from '../context/DatabaseContext.js';
 import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
 import { calculateColdTempCorrection } from '../engine/atmospheric.js';
-import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
+import { calculateDescentProfile } from '../engine/descentEngine.js';
 
 export default function CalculatorDescent() {
-  const { mission, updateMissionField, descentPerf, loading } = useMission();
+  const { mission, updateMissionField } = useMission();
+  const { descentPerf, loading } = useDatabase();
 
   const [inputs, setInputs] = useState({
     targetAltitude: 3000,
@@ -44,98 +46,21 @@ export default function CalculatorDescent() {
   const trueTargetAlt = calculateTruePressureAlt(correctedTargetAlt, inputs.arrivalQnh);
   const altDiff = (mission.cruiseFL * 100) - trueTargetAlt;
   
-  // Matrix-based descent performance lookup
-  const getDescentPerfForFpa = (fpaKey, diff, speed) => {
-    if (!descentPerf || !descentPerf.descent_profiles) return null;
-    const profile = descentPerf.descent_profiles[fpaKey];
-    if (!profile) return null;
-
-    const dist = interpolate2D(diff, speed, profile.alt_diff_headers, profile.speed_headers, profile.distance_nm);
-    const time = interpolate2D(diff, speed, profile.alt_diff_headers, profile.speed_headers, profile.time_min);
-    const fuel = interpolate2D(diff, speed, profile.alt_diff_headers, profile.speed_headers, profile.fuel_lbs);
-
-    if (dist === null || time === null || fuel === null) return null;
-    return { dist, time, fuel };
-  };
-
-  const getDescentPerf = (fpa, diff, speed) => {
-    if (!descentPerf || !descentPerf.descent_profiles) return null;
-    const profiles = descentPerf.descent_profiles;
-    const fpaKeys = Object.keys(profiles).map(Number).sort((a, b) => a - b);
-
-    let fpaLow = fpaKeys[0];
-    let fpaHigh = fpaKeys[fpaKeys.length - 1];
-
-    if (fpa <= fpaKeys[0]) {
-      fpaLow = fpaHigh = fpaKeys[0];
-    } else if (fpa >= fpaKeys[fpaKeys.length - 1]) {
-      fpaLow = fpaHigh = fpaKeys[fpaKeys.length - 1];
-    } else {
-      for (let i = 0; i < fpaKeys.length - 1; i++) {
-        if (fpa >= fpaKeys[i] && fpa <= fpaKeys[i + 1]) {
-          fpaLow = fpaKeys[i];
-          fpaHigh = fpaKeys[i + 1];
-          break;
-        }
-      }
-    }
-
-    const lowResult = getDescentPerfForFpa(fpaLow.toFixed(1), diff, speed);
-    const highResult = getDescentPerfForFpa(fpaHigh.toFixed(1), diff, speed);
-
-    if (!lowResult || !highResult) return null;
-
-    if (fpaLow === fpaHigh) return lowResult;
-
-    // Linear interpolate between FPA tiers
-    return {
-      dist: interpolate1D(fpa, fpaLow, fpaHigh, lowResult.dist, highResult.dist),
-      time: interpolate1D(fpa, fpaLow, fpaHigh, lowResult.time, highResult.time),
-      fuel: interpolate1D(fpa, fpaLow, fpaHigh, lowResult.fuel, highResult.fuel)
-    };
-  };
-
-  let todDistance = "---";
-  let timeFormatted = "---";
-  let vsi = "---";
-  let glideRatio = "---";
-  let fuelFlowLbs = "---";
-  let decelerationDistance = 0;
-  let isOutOfEnvelope = false;
-
-  const dbResult = getDescentPerf(inputs.fpa, altDiff, inputs.descentSpeed);
-
-  if (dbResult === null) {
-    isOutOfEnvelope = true;
-  } else if (dbResult) {
-    // E-Jet Specific FADEC Flight Idle Icing Penalty (Higher N1 = Shallower Descent)
-    const icingDistancePenalty = inputs.flightIdleIcing ? 1.15 : 1.0;
-
-    // Horizontal Deceleration Segment (Level or shallow flight to bleed speed at transition altitude)
-    decelerationDistance = trueTargetAlt < inputs.speedTransitionAlt && inputs.descentSpeed > 250 
-      ? Math.max(0, (inputs.descentSpeed - 250) * 0.15) 
-      : 0;
-    
-    // High-wind correction with a logarithmic decay model
-    const boundedWind = Math.max(-200, Math.min(200, inputs.descentWind));
-    const windSign = boundedWind >= 0 ? 1 : -1;
-    const windCorrection = windSign * Math.log10(1 + Math.abs(boundedWind) * 0.15) * (altDiff / 1000) * 1.65;
-    
-    todDistance = Math.round(Math.max(10, (dbResult.dist * icingDistancePenalty) + windCorrection + decelerationDistance));
-    
-    // Kinematics and Timings
-    const averageTAS = Math.round(350 - (altDiff / 1000) * 2);
-    const averageGS = Math.max(100, averageTAS + boundedWind);
-    
-    const timeMin = (todDistance / averageGS) * 60;
-    timeFormatted = `${Math.floor(timeMin)}:${Math.round((timeMin % 1) * 60).toString().padStart(2, '0')} min`;
-
-    vsi = Math.round(-1 * averageGS * 101.268 * Math.tan((inputs.fpa * Math.PI) / 180));
-    glideRatio = altDiff > 0 ? Math.round(((todDistance * 6076.1) / altDiff) * 10) / 10 : 0;
-
-    // Fuel & Cabin metrics
-    fuelFlowLbs = Math.round(dbResult.fuel * icingDistancePenalty + (boundedWind * 0.11));
-  }
+  // ── Descent Engine Computations ───────────────────────────────────────────
+  const {
+    todDistance, timeFormatted, vsi, glideRatio,
+    fuelBurned: fuelFlowLbs, decelerationDistance,
+    isOutOfEnvelope, coldTempActive, coldTempCarsWarning,
+  } = calculateDescentProfile({
+    fpa:               inputs.fpa,
+    altDiff,
+    descentSpeed:      inputs.descentSpeed,
+    speedTransitionAlt: inputs.speedTransitionAlt,
+    trueTargetAlt,
+    descentWind:       inputs.descentWind,
+    flightIdleIcing:   inputs.flightIdleIcing,
+    destinationOAT:    inputs.destinationOAT,
+  }, descentPerf);
 
   if (loading || !descentPerf) return <div className="panel-container"><p>Synchronizing Descent Database...</p></div>;
 
@@ -304,10 +229,12 @@ export default function CalculatorDescent() {
           <div className="alert-banner info" style={{ marginTop: '24px' }}>
             {isOutOfEnvelope ? (
               <span className="text-danger"><strong>WARNING:</strong> Trajectory exceeds performance envelope boundaries. Lower cruise flight level or adjust target parameters.</span>
+            ) : coldTempCarsWarning ? (
+              <span style={{ color: 'var(--accent-warn)' }}><strong>CARs 602.35 CAUTION:</strong> OAT {inputs.destinationOAT}°C is at or below −15°C. Cold temperature altitude corrections are mandatory for all approach minima and en-route MEAs. Geometric target alt adjusted to {correctedTargetAlt.toLocaleString()} ft.</span>
+            ) : coldTempActive ? (
+              <span style={{ color: 'var(--accent-warn)' }}><strong>Winter Ops:</strong> Cold temperature correction active (OAT {inputs.destinationOAT}°C). Geometric target alt adjusted to {correctedTargetAlt.toLocaleString()} ft for safety.</span>
             ) : inputs.flightIdleIcing ? (
               <span style={{ color: 'var(--accent-warn)' }}><strong>WARNING:</strong> Flight Idle Icing active. Elevated FADEC thrust demands require an earlier TOD to prevent overshooting the vertical profile.</span>
-            ) : inputs.destinationOAT <= 0 ? (
-              <span style={{ color: 'var(--accent-warn)' }}><strong>Winter Ops:</strong> Cold temperature correction active. Geometric target alt adjusted to {correctedTargetAlt.toLocaleString()} ft for safety.</span>
             ) : decelerationDistance > 0 ? (
               <span><strong>Profile Note:</strong> Added {decelerationDistance.toFixed(1)} NM to TOD calculation to account for kinetic energy bleed at {inputs.speedTransitionAlt.toLocaleString()} ft.</span>
             ) : (

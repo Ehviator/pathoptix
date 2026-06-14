@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useMission } from '../context/MissionContext.js';
+import { useDatabase } from '../context/DatabaseContext.js';
 import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
 import { calculateTruePressureAlt } from '../engine/thermodynamics.js';
-import { interpolate2D, interpolate1D } from '../engine/interpolation.js';
+import { calculateClimbProfile, calculateAlternateClimbProfile } from '../engine/climbEngine.js';
 
 export default function CalculatorClimb() {
-  const { mission, updateMissionField, climbPerf, loading } = useMission();
+  const { mission, updateMissionField } = useMission();
+  const { climbPerf, loading } = useDatabase();
 
   const [inputs, setInputs] = useState({
     climbWeight: 115000, 
@@ -57,161 +59,34 @@ export default function CalculatorClimb() {
   const trueFieldAlt = calculateTruePressureAlt(inputs.fieldElevation, inputs.qnh);
   const effectiveClimbAlt = Math.max(0, trueTargetAlt - trueFieldAlt);
   
-  // Matrix-based climb performance lookup
-  const getClimbPerfForAlt = (alt, weight, isaDev) => {
-    if (!climbPerf || !climbPerf.climb_profiles) return null;
-    if (alt <= 0) return { time: 0, fuel: 0, dist: 0 };
+  // ── Climb Engine Computations ─────────────────────────────────────────────
+  const baseProfile = calculateClimbProfile({
+    pressureTargetAlt:    trueTargetAlt,
+    pressureFieldAlt:     trueFieldAlt,
+    weightLbs:            inputs.climbWeight,
+    isaDev:               inputs.isaDev,
+    atcSpeedRestriction:  inputs.atcSpeedRestriction,
+    antiIce:              inputs.antiIce,
+    windBelow180:         inputs.windBelow180,
+    windAbove180:         inputs.windAbove180,
+  }, climbPerf);
 
-    const profiles = climbPerf.climb_profiles;
-    const altKeys = Object.keys(profiles).map(Number).sort((a, b) => a - b);
+  const {
+    timeToClimb, fuelBurned, climbDistance,
+    averageROC, totalWindDisplacement,
+    isOutOfEnvelope,
+  } = baseProfile;
 
-    // If altitude is below the first tier (15,000 ft), interpolate between Sea Level (0) and 15,000 ft
-    if (alt < altKeys[0]) {
-      const altHigh = altKeys[0];
-      const profileHigh = profiles[altHigh.toString()];
+  const altProfile = isOutOfEnvelope
+    ? { altTimeToClimb: 0, altFuelBurned: 0, altClimbDistance: 0, timeDelta: 0, fuelDelta: 0, distDelta: 0 }
+    : calculateAlternateClimbProfile(baseProfile, {
+        compareIas:   inputs.compareIas,
+        compareMach:  inputs.compareMach,
+        windBelow180: inputs.windBelow180,
+        windAbove180: inputs.windAbove180,
+      });
 
-      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
-      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
-      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
-
-      if (timeHigh === null || fuelHigh === null || distHigh === null) {
-        return null;
-      }
-
-      return {
-        time: interpolate1D(alt, 0, altHigh, 0, timeHigh),
-        fuel: interpolate1D(alt, 0, altHigh, 0, fuelHigh),
-        dist: interpolate1D(alt, 0, altHigh, 0, distHigh)
-      };
-    }
-
-    // Bracket standard altitude search
-    let altLow = altKeys[0];
-    let altHigh = altKeys[altKeys.length - 1];
-
-    if (alt >= altKeys[altKeys.length - 1]) {
-      altLow = altHigh = altKeys[altKeys.length - 1];
-    } else {
-      for (let i = 0; i < altKeys.length - 1; i++) {
-        if (alt >= altKeys[i] && alt <= altKeys[i + 1]) {
-          altLow = altKeys[i];
-          altHigh = altKeys[i + 1];
-          break;
-        }
-      }
-    }
-
-    const profileLow = profiles[altLow.toString()];
-    const profileHigh = profiles[altHigh.toString()];
-
-    const timeLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.time_min);
-    const fuelLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.fuel_lbs);
-    const distLow = interpolate2D(weight, isaDev, profileLow.weights, profileLow.isa_headers, profileLow.distance_nm);
-
-    if (altLow === altHigh) {
-      if (timeLow === null || fuelLow === null || distLow === null) {
-        return null;
-      }
-      return { time: timeLow, fuel: fuelLow, dist: distLow };
-    } else {
-      const timeHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.time_min);
-      const fuelHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.fuel_lbs);
-      const distHigh = interpolate2D(weight, isaDev, profileHigh.weights, profileHigh.isa_headers, profileHigh.distance_nm);
-
-      if (timeLow === null || timeHigh === null || fuelLow === null || fuelHigh === null || distLow === null || distHigh === null) {
-        return null;
-      }
-      return {
-        time: interpolate1D(alt, altLow, altHigh, timeLow, timeHigh),
-        fuel: interpolate1D(alt, altLow, altHigh, fuelLow, fuelHigh),
-        dist: interpolate1D(alt, altLow, altHigh, distLow, distHigh)
-      };
-    }
-  };
-
-  let timeToClimb = "---";
-  let fuelBurned = "---";
-  let climbDistance = "---";
-  let isOutOfEnvelope = false;
-  let totalWindDisplacement = 0;
-
-  // Alternate profile variables
-  let altTimeToClimb = 0;
-  let altFuelBurned = 0;
-  let altClimbDistance = 0;
-  let timeDelta = 0;
-  let fuelDelta = 0;
-  let distDelta = 0;
-
-  const perfTarget = getClimbPerfForAlt(trueTargetAlt, inputs.climbWeight, inputs.isaDev);
-  const perfField = getClimbPerfForAlt(trueFieldAlt, inputs.climbWeight, inputs.isaDev);
-
-  if (perfTarget === null || perfField === null) {
-    isOutOfEnvelope = true;
-  } else if (perfTarget && perfField) {
-    const rawTime = perfTarget.time - perfField.time;
-    const rawFuel = perfTarget.fuel - perfField.fuel;
-    const rawDist = perfTarget.dist - perfField.dist;
-
-    const atcPenaltyTime = inputs.atcSpeedRestriction && effectiveClimbAlt > 10000 ? 1.8 : 0;
-    const antiIcePenaltyTime = inputs.antiIce ? (effectiveClimbAlt / 1000) * 0.06 : 0;
-    const antiIceFuelPenalty = inputs.antiIce ? (effectiveClimbAlt / 1000) * 14 : 0;
-
-    timeToClimb = Math.max(1, Math.round(rawTime + atcPenaltyTime + antiIcePenaltyTime));
-    fuelBurned = Math.round(rawFuel + antiIceFuelPenalty);
-    
-    // Wind factor on distance
-    const timeBelow180 = Math.min(timeToClimb, 10);
-    const timeAbove180 = Math.max(0, timeToClimb - 10);
-    const windEffectBelow = (inputs.windBelow180 * (timeBelow180 / 60));
-    const windEffectAbove = (inputs.windAbove180 * (timeAbove180 / 60));
-    totalWindDisplacement = windEffectBelow + windEffectAbove;
-
-    climbDistance = Math.max(5, Math.round(rawDist + totalWindDisplacement));
-
-    // Alternate Speed calculations (comparing custom IAS/Mach against standard 290/.76)
-    const altIas = inputs.compareIas !== undefined ? inputs.compareIas : 290;
-    const altMach = inputs.compareMach !== undefined ? inputs.compareMach : 0.76;
-
-    const iasRatio = altIas / 290;
-
-    // Slower speeds take slightly more time, but faster speeds take significantly more time due to drag & lower ROC
-    const vDiff = altIas - 290;
-    const timeMultIas = vDiff >= 0
-      ? 1.0 + 0.6 * (vDiff / 290) + 2.0 * Math.pow(vDiff / 290, 2)
-      : 1.0 + 0.25 * Math.abs(vDiff / 290);
-
-    const mDiff = altMach - 0.76;
-    const timeMultMach = mDiff >= 0
-      ? 1.0 + 0.6 * (mDiff / 0.76) + 2.0 * Math.pow(mDiff / 0.76, 2)
-      : 1.0 + 0.25 * Math.abs(mDiff / 0.76);
-
-    const timeMult = 0.8 * timeMultIas + 0.2 * timeMultMach;
-
-    // Fuel flow scales exponentially (V^2.2) due to aerodynamic drag
-    const ffMultIas = Math.pow(altIas / 290, 2.2);
-    const ffMachRatio = altMach / 0.76;
-    const ffMultMach = Math.pow(ffMachRatio, 2.2);
-    const ffMult = 0.8 * ffMultIas + 0.2 * ffMultMach;
-
-    altTimeToClimb = Math.max(1, Math.round(timeToClimb * timeMult));
-    altFuelBurned = Math.round(fuelBurned * timeMult * ffMult);
-
-    const altDistStillAir = rawDist * iasRatio * timeMult;
-    const altTimeBelow180 = Math.min(altTimeToClimb, 10);
-    const altTimeAbove180 = Math.max(0, altTimeToClimb - 10);
-    const altWindEffectBelow = (inputs.windBelow180 * (altTimeBelow180 / 60));
-    const altWindEffectAbove = (inputs.windAbove180 * (altTimeAbove180 / 60));
-    const altTotalWindDisplacement = altWindEffectBelow + altWindEffectAbove;
-
-    altClimbDistance = Math.max(5, Math.round(altDistStillAir + altTotalWindDisplacement));
-
-    timeDelta = altTimeToClimb - timeToClimb;
-    fuelDelta = altFuelBurned - fuelBurned;
-    distDelta = altClimbDistance - climbDistance;
-  }
-
-  const averageROC = timeToClimb > 0 && !isOutOfEnvelope ? Math.round(effectiveClimbAlt / timeToClimb) : 0;
+  const { altTimeToClimb, altFuelBurned, altClimbDistance, timeDelta, fuelDelta, distDelta } = altProfile;
 
   if (loading || !climbPerf) return <div className="panel-container"><p>Synchronizing Climb Database...</p></div>;
 
