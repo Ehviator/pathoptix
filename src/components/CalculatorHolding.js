@@ -8,11 +8,15 @@ export default function CalculatorHolding() {
     remainingFuel: 8000 // lbs
   });
 
-  const handleInputChange = (key, val) => {
-    setInputs(prev => ({ ...prev, [key]: val }));
+  const adjustInput = (key, step, min, max) => {
+    setInputs(prev => {
+      const nextVal = prev[key] + step;
+      if (nextVal < min || nextVal > max) return prev;
+      return { ...prev, [key]: nextVal };
+    });
   };
 
-  // Holding Fuel Flow calculation (E195-E2 dual engine fuel flow in clean configuration)
+  // Holding Fuel Flow calculation
   const baseHoldingFF = 2850; // lbs/h
   const weightFactor = (inputs.weight - 85000) * 0.0125;
   const altFactor = (inputs.altitude / 1000) * 15;
@@ -23,13 +27,13 @@ export default function CalculatorHolding() {
   // Total fuel burned in the planned hold duration
   const plannedHoldBurn = Math.round(fuelFlowPerMin * inputs.holdDuration);
 
-  // Maximum endurance estimation (reserves = 2,500 lbs standard fuel reserve limit)
+  // Maximum endurance estimation
   const reserveFuelLimit = 2500;
   const usableHoldingFuel = Math.max(0, inputs.remainingFuel - reserveFuelLimit);
   const maxEnduranceMin = (usableHoldingFuel / fuelFlowPerHour) * 60;
   const maxEnduranceFormatted = `${Math.floor(maxEnduranceMin)} min`;
 
-  // Best holding speed (Green Dot speed - speed for maximum endurance)
+  // Best holding speed (Green Dot speed)
   const bestHoldingSpeed = Math.round(185 + (inputs.weight - 85000) * 0.0011 + (inputs.altitude / 1000) * 0.5);
 
   return (
@@ -43,53 +47,41 @@ export default function CalculatorHolding() {
         <div className="input-section glass-panel">
           <h3>Holding Configuration Inputs</h3>
 
-          <div className="input-group">
-            <label>Current Aircraft Weight: {inputs.weight.toLocaleString()} lbs</label>
-            <input 
-              type="range" 
-              min="85000" 
-              max="130000" 
-              step="1000" 
-              value={inputs.weight} 
-              onChange={(e) => handleInputChange('weight', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Current Aircraft Weight (lbs)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('weight', -1000, 85000, 130000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.weight.toLocaleString()} lbs</span>
+              <button type="button" onClick={() => adjustInput('weight', 1000, 85000, 130000)} className="btn-step">+</button>
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Holding Altitude: {inputs.altitude.toLocaleString()} ft</label>
-            <input 
-              type="range" 
-              min="2000" 
-              max="25000" 
-              step="1000" 
-              value={inputs.altitude} 
-              onChange={(e) => handleInputChange('altitude', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Holding Altitude (ft)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('altitude', -1000, 2000, 25000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.altitude.toLocaleString()} ft</span>
+              <button type="button" onClick={() => adjustInput('altitude', 1000, 2000, 25000)} className="btn-step">+</button>
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Remaining Fuel On-board: {inputs.remainingFuel.toLocaleString()} lbs</label>
-            <input 
-              type="range" 
-              min="3000" 
-              max="15000" 
-              step="500" 
-              value={inputs.remainingFuel} 
-              onChange={(e) => handleInputChange('remainingFuel', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Remaining Fuel On-board (lbs)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('remainingFuel', -500, 3000, 15000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.remainingFuel.toLocaleString()} lbs</span>
+              <button type="button" onClick={() => adjustInput('remainingFuel', 500, 3000, 15000)} className="btn-step">+</button>
+            </div>
             <span className="caption">Standard reserve limit of 2,500 lbs will be protected.</span>
           </div>
 
-          <div className="input-group">
-            <label>Planned Hold Duration: {inputs.holdDuration} minutes</label>
-            <input 
-              type="range" 
-              min="5" 
-              max="90" 
-              step="5" 
-              value={inputs.holdDuration} 
-              onChange={(e) => handleInputChange('holdDuration', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Planned Hold Duration (min)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('holdDuration', -5, 5, 90)} className="btn-step">──</button>
+              <span className="value-display">{inputs.holdDuration} min</span>
+              <button type="button" onClick={() => adjustInput('holdDuration', 5, 5, 90)} className="btn-step">+</button>
+            </div>
           </div>
         </div>
 

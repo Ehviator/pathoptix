@@ -8,8 +8,12 @@ export default function CalculatorClimb() {
     isaDev: 0
   });
 
-  const handleInputChange = (key, val) => {
-    setInputs(prev => ({ ...prev, [key]: val }));
+  const adjustInput = (key, step, min, max) => {
+    setInputs(prev => {
+      const nextVal = prev[key] + step;
+      if (nextVal < min || nextVal > max) return prev;
+      return { ...prev, [key]: nextVal };
+    });
   };
 
   const climbWeightKg = inputs.climbWeight / 2.20462;
@@ -19,24 +23,20 @@ export default function CalculatorClimb() {
   const targetedIAS = modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, inputs.isaDev);
 
   // Performance outputs
-  // Time to climb (approx 12 min base + weight penalty + temp penalty)
   const baseTimeToClimb = 12; // minutes
   const weightTimeFactor = (inputs.climbWeight - 90000) * 0.00012;
   const tempTimeFactor = inputs.isaDev > 0 ? inputs.isaDev * 0.15 : 0;
   const altTimeFactor = (inputs.targetAltitude - 25000) * 0.0003;
   const timeToClimb = Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + altTimeFactor);
 
-  // Climb distance (approx 65 NM base + factors)
   const climbDistance = Math.round(55 + (climbWeightKg - 40000) * 0.00075 + (inputs.targetAltitude - 20000) * 0.0015 + inputs.isaDev * 0.25);
 
-  // Fuel burned in climb (approx 1400 lbs base + factors)
   const baseClimbFuel = 1300; // lbs
   const weightFuelFactor = (inputs.climbWeight - 90000) * 0.015;
   const tempFuelFactor = inputs.isaDev > 0 ? inputs.isaDev * 12 : 0;
   const altFuelFactor = (inputs.targetAltitude - 25000) * 0.035;
   const fuelBurned = Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + altFuelFactor);
 
-  // Rate of climb (TOC average)
   const averageROC = Math.round(inputs.targetAltitude / timeToClimb);
 
   return (
@@ -50,40 +50,32 @@ export default function CalculatorClimb() {
         <div className="input-section glass-panel">
           <h3>Climb Setup Inputs</h3>
 
-          <div className="input-group">
-            <label>Current Aircraft Weight: {inputs.climbWeight.toLocaleString()} lbs</label>
-            <input 
-              type="range" 
-              min="85000" 
-              max="135000" 
-              step="1000" 
-              value={inputs.climbWeight} 
-              onChange={(e) => handleInputChange('climbWeight', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Current Aircraft Weight (lbs)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('climbWeight', -1000, 85000, 135000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.climbWeight.toLocaleString()} lbs</span>
+              <button type="button" onClick={() => adjustInput('climbWeight', 1000, 85000, 135000)} className="btn-step">+</button>
+            </div>
             <span className="caption">Equivalent to {Math.round(climbWeightKg).toLocaleString()} kg.</span>
           </div>
 
-          <div className="input-group">
-            <label>Target Altitude (TOC): {inputs.targetAltitude.toLocaleString()} ft</label>
-            <input 
-              type="range" 
-              min="15000" 
-              max="41000" 
-              step="1000" 
-              value={inputs.targetAltitude} 
-              onChange={(e) => handleInputChange('targetAltitude', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Target Altitude (ft)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('targetAltitude', -1000, 15000, 41000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.targetAltitude.toLocaleString()} ft</span>
+              <button type="button" onClick={() => adjustInput('targetAltitude', 1000, 15000, 41000)} className="btn-step">+</button>
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>ISA Deviation: {inputs.isaDev > 0 ? `+${inputs.isaDev}` : inputs.isaDev}°C</label>
-            <input 
-              type="range" 
-              min="-20" 
-              max="20" 
-              value={inputs.isaDev} 
-              onChange={(e) => handleInputChange('isaDev', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>ISA Deviation</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('isaDev', -1, -20, 20)} className="btn-step">──</button>
+              <span className="value-display">{inputs.isaDev > 0 ? `+${inputs.isaDev}` : inputs.isaDev}°C</span>
+              <button type="button" onClick={() => adjustInput('isaDev', 1, -20, 20)} className="btn-step">+</button>
+            </div>
           </div>
         </div>
 

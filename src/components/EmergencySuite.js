@@ -8,8 +8,12 @@ export default function EmergencySuite() {
     selectedTerrainAlt: 8000
   });
 
-  const handleInputChange = (key, val) => {
-    setInputs(prev => ({ ...prev, [key]: val }));
+  const adjustInput = (key, step, min, max) => {
+    setInputs(prev => {
+      const nextVal = prev[key] + step;
+      if (nextVal < min || nextVal > max) return prev;
+      return { ...prev, [key]: nextVal };
+    });
   };
 
   // Convert weight to KG internally for calculations
@@ -50,54 +54,43 @@ export default function EmergencySuite() {
         <div className="input-section glass-panel warning-border">
           <h3>OEI Atmospheric & Status Inputs</h3>
 
-          <div className="input-group">
-            <label>Current Weight: {inputs.cruiseWeight.toLocaleString()} lbs</label>
-            <input 
-              type="range" 
-              min="90000" 
-              max="130000" 
-              step="1000" 
-              value={inputs.cruiseWeight} 
-              onChange={(e) => handleInputChange('cruiseWeight', parseInt(e.target.value))} 
-            />
+          <div className="input-group-tactile">
+            <label>Current Weight (lbs)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('cruiseWeight', -1000, 90000, 130000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.cruiseWeight.toLocaleString()} lbs</span>
+              <button type="button" onClick={() => adjustInput('cruiseWeight', 1000, 90000, 130000)} className="btn-step">+</button>
+            </div>
             <span className="caption">Equivalent to {Math.round(cruiseWeightKg).toLocaleString()} kg.</span>
           </div>
 
-          <div className="input-group">
-            <label>OAT Deviation (from ISA): {inputs.oatDev > 0 ? `+${inputs.oatDev}` : inputs.oatDev}°C</label>
-            <input 
-              type="range" 
-              min="-15" 
-              max="25" 
-              value={inputs.oatDev} 
-              onChange={(e) => handleInputChange('oatDev', parseInt(e.target.value))} 
-            />
-          </div>
-
-          <div className="input-group">
-            <label>Terrain Altitude to Clear: {inputs.selectedTerrainAlt.toLocaleString()} ft</label>
-            <input 
-              type="range" 
-              min="2000" 
-              max="16000" 
-              step="500" 
-              value={inputs.selectedTerrainAlt} 
-              onChange={(e) => handleInputChange('selectedTerrainAlt', parseInt(e.target.value))} 
-            />
-          </div>
-
-          <div className="input-group toggle-group-container">
-            <label>Engine Anti-Ice Configuration</label>
-            <div className="toggle-group">
-              <button 
-                className={inputs.antiIce === false ? 'active' : ''} 
-                onClick={() => handleInputChange('antiIce', false)}
-              >Engine Anti-Ice OFF</button>
-              <button 
-                className={inputs.antiIce === true ? 'active' : ''} 
-                onClick={() => handleInputChange('antiIce', true)}
-              >Engine Anti-Ice ON</button>
+          <div className="input-group-tactile">
+            <label>OAT Deviation (from ISA)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('oatDev', -1, -15, 25)} className="btn-step">──</button>
+              <span className="value-display">{inputs.oatDev > 0 ? `+${inputs.oatDev}` : inputs.oatDev}°C</span>
+              <button type="button" onClick={() => adjustInput('oatDev', 1, -15, 25)} className="btn-step">+</button>
             </div>
+          </div>
+
+          <div className="input-group-tactile">
+            <label>Terrain Altitude to Clear (ft)</label>
+            <div className="tactile-row">
+              <button type="button" onClick={() => adjustInput('selectedTerrainAlt', -500, 2000, 16000)} className="btn-step">──</button>
+              <span className="value-display">{inputs.selectedTerrainAlt.toLocaleString()} ft</span>
+              <button type="button" onClick={() => adjustInput('selectedTerrainAlt', 500, 2000, 16000)} className="btn-step">+</button>
+            </div>
+          </div>
+
+          <div className="input-group-toggle">
+            <label className="toggle-container">
+              <input 
+                type="checkbox" 
+                checked={inputs.antiIce} 
+                onChange={(e) => setInputs(prev => ({ ...prev, antiIce: e.target.checked }))} 
+              />
+              <span className="toggle-label">Engine Anti-Ice Configuration ACTIVE</span>
+            </label>
           </div>
         </div>
 

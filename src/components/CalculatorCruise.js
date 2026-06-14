@@ -5,12 +5,12 @@ import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 
 export default function CalculatorCruise() {
   const [inputs, setInputs] = useState({
-    speedMode: 'ECON', // Dual States: 'ECON' or 'MANUAL'
+    speedMode: 'ECON', // 'ECON' or 'MANUAL'
     weight: 115000, 
     flightLevel: 350,
     isaDev: 0,
     costIndex: 15,
-    manualMach: 0.78, // Direct targeting parameter
+    manualMach: 0.78,
     wind: 10,
     antiIce: false
   });
@@ -26,7 +26,7 @@ export default function CalculatorCruise() {
         setLoading(false);
       })
       .catch(err => {
-        console.error("Database initialization fault:", err);
+        console.error("Database fault:", err);
         setLoading(false);
       });
   }, []);
@@ -34,10 +34,7 @@ export default function CalculatorCruise() {
   const adjustInput = (key, step, min, max) => {
     setInputs(prev => {
       let nextVal = prev[key] + step;
-      // Handle floating point precision rounding issues for manualMach
-      if (key === 'manualMach') {
-        nextVal = Math.round(nextVal * 100) / 100;
-      }
+      if (key === 'manualMach') nextVal = Math.round(nextVal * 100) / 100;
       if (nextVal < min || nextVal > max) return prev;
       return { ...prev, [key]: nextVal };
     });
@@ -51,7 +48,6 @@ export default function CalculatorCruise() {
     }
   }, [inputs.weight, maxOperatingFL]);
 
-  // Performance Math Ingestion Pipelines
   const correctedCI = getCorrectedCostIndex(inputs.costIndex, inputs.wind);
   const weightLbs = inputs.weight;
   const weightKg = inputs.weight / 2.20462;
@@ -78,9 +74,8 @@ export default function CalculatorCruise() {
       }
     }
   } else {
-    // MANUAL Mode Boundary Clamping
     if (inputs.flightLevel > 370 && resolvedMach > 0.80) {
-      isOutOfEnvelope = true; // Protect high altitude buffet boundaries
+      isOutOfEnvelope = true;
     }
   }
 
@@ -89,7 +84,6 @@ export default function CalculatorCruise() {
   const tas = Math.round(getTASFromMach(resolvedMach, actualTemp));
   const gs = Math.round(tas + inputs.wind);
 
-  // High-Fidelity Performance Fuel Curves
   const baseFFKg = 1550; 
   const machFactor = (resolvedMach - 0.70) * 4200;
   const weightFactor = (weightKg - 40000) * 0.028;
@@ -107,8 +101,6 @@ export default function CalculatorCruise() {
     <div className="panel-container">
       <div className="panel-header">
         <h2>Cruise Performance & Speed Advisor</h2>
-        
-        {/* Uniform Styling Segment: Primary State Toggles */}
         <div className="mode-toggle-bar">
           <button 
             type="button" 
@@ -149,7 +141,6 @@ export default function CalculatorCruise() {
             </div>
           </div>
 
-          {/* Dynamic Context Input Rendering */}
           {inputs.speedMode === 'ECON' ? (
             <div className="input-group-tactile">
               <label>Cost Index (CI)</label>
@@ -202,7 +193,6 @@ export default function CalculatorCruise() {
 
         <div className="results-section glass-panel highlight-accent">
           <h3>Calculated Targets</h3>
-
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Target Speed</span>
