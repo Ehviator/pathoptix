@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pathoptix-v3';
+const CACHE_NAME = 'pathoptix-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
