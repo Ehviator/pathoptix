@@ -7,53 +7,62 @@ import { getTASFromMach, getISATemperature } from '../engine/atmospheric.js';
 export default function CalculatorCruise() {
   const { mission, updateMissionField, cruiseMatrix, maxOperatingFL, loading } = useMission();
 
-  const boundedWind = Math.max(-200, Math.min(200, mission.wind));
-  const correctedCI = getCorrectedCostIndex(mission.costIndex, boundedWind);
-  const weightLbs = mission.weight;
-  const weightKg = mission.weight / 2.20462;
-  
-  let resolvedMach = mission.manualMach; 
-  let isOutOfEnvelope = false;
-  const targetAltKey = (mission.cruiseFL * 100).toString();
+  const hasIncompleteInputs = mission.weight === "" || 
+                              mission.cruiseFL === "" || 
+                              mission.isaDev === "" || 
+                              mission.wind === "" ||
+                              (mission.speedMode === 'ECON' && mission.costIndex === "") ||
+                              (mission.speedMode === 'MANUAL' && mission.manualMach === "");
 
-  if (mission.speedMode === 'ECON') {
-    if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
-      const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
-      const interpResult = interpolate2D(
-        weightLbs,
-        correctedCI,
-        matrix.weights,
-        matrix.cost_index_headers,
-        matrix.data
-      );
-      if (interpResult === null) {
-        isOutOfEnvelope = true;
-        resolvedMach = 0.74; 
-      } else {
-        resolvedMach = Math.round(interpResult * 100) / 100;
+  const boundedWind = hasIncompleteInputs ? 0 : Math.max(-200, Math.min(200, mission.wind));
+  const correctedCI = hasIncompleteInputs ? 0 : getCorrectedCostIndex(mission.costIndex, boundedWind);
+  const weightLbs = hasIncompleteInputs ? 0 : mission.weight;
+  const weightKg = hasIncompleteInputs ? 0 : mission.weight / 2.20462;
+  
+  let resolvedMach = hasIncompleteInputs ? 0 : mission.manualMach; 
+  let isOutOfEnvelope = false;
+  const targetAltKey = hasIncompleteInputs ? "33000" : (mission.cruiseFL * 100).toString();
+
+  if (!hasIncompleteInputs) {
+    if (mission.speedMode === 'ECON') {
+      if (cruiseMatrix && cruiseMatrix.cruise_mach_matrix) {
+        const matrix = cruiseMatrix.cruise_mach_matrix[targetAltKey] || cruiseMatrix.cruise_mach_matrix["33000"];
+        const interpResult = interpolate2D(
+          weightLbs,
+          correctedCI,
+          matrix.weights,
+          matrix.cost_index_headers,
+          matrix.data
+        );
+        if (interpResult === null) {
+          isOutOfEnvelope = true;
+          resolvedMach = 0.74; 
+        } else {
+          resolvedMach = Math.round(interpResult * 100) / 100;
+        }
       }
-    }
-  } else {
-    if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
-      isOutOfEnvelope = true;
+    } else {
+      if (mission.cruiseFL > 370 && resolvedMach > 0.80) {
+        isOutOfEnvelope = true;
+      }
     }
   }
 
-  const isaTemp = getISATemperature(mission.cruiseFL * 100);
-  const actualTemp = isaTemp + mission.isaDev;
-  const tas = Math.round(getTASFromMach(resolvedMach, actualTemp));
-  const gs = Math.round(tas + boundedWind);
+  const isaTemp = hasIncompleteInputs ? 0 : getISATemperature(mission.cruiseFL * 100);
+  const actualTemp = isaTemp + (hasIncompleteInputs ? 0 : mission.isaDev);
+  const tas = hasIncompleteInputs ? "---" : Math.round(getTASFromMach(resolvedMach, actualTemp));
+  const gs = hasIncompleteInputs ? "---" : Math.round(tas + boundedWind);
 
   const baseFFKg = 1550; 
-  const machFactor = (resolvedMach - 0.70) * 4200;
-  const weightFactor = (weightKg - 40000) * 0.028;
-  const altFactor = (mission.cruiseFL - 330) * -14;
-  const antiIceFactor = mission.antiIce ? 180 : 0;
+  const machFactor = hasIncompleteInputs ? 0 : (resolvedMach - 0.70) * 4200;
+  const weightFactor = hasIncompleteInputs ? 0 : (weightKg - 40000) * 0.028;
+  const altFactor = hasIncompleteInputs ? 0 : (mission.cruiseFL - 330) * -14;
+  const antiIceFactor = hasIncompleteInputs ? 0 : (mission.antiIce ? 180 : 0);
   
-  const fuelFlowKg = Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
-  const fuelFlowLbs = Math.round(fuelFlowKg * 2.20462);
-  const specificRange = fuelFlowLbs > 0 ? Math.round((gs / fuelFlowLbs) * 1000) / 1000 : 0;
-  const optimalFL = Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
+  const fuelFlowKg = hasIncompleteInputs ? 0 : Math.max(1200, baseFFKg + machFactor + weightFactor + altFactor + antiIceFactor);
+  const fuelFlowLbs = hasIncompleteInputs ? "---" : Math.round(fuelFlowKg * 2.20462);
+  const specificRange = hasIncompleteInputs || fuelFlowLbs === 0 || tas === "---" ? "---" : Math.round((gs / fuelFlowLbs) * 1000) / 1000;
+  const optimalFL = hasIncompleteInputs ? "---" : Math.min(maxOperatingFL, Math.round((410 - (mission.weight - 85000) * 0.00018) / 10) * 10);
 
   if (loading) return <div className="panel-container"><p>Synchronizing Cruise Performance Database...</p></div>;
 
@@ -185,24 +194,24 @@ export default function CalculatorCruise() {
             <div className="metric-box">
               <span className="label">Target Profile Speed</span>
               <span className={`value ${isOutOfEnvelope ? 'text-danger' : ''}`}>
-                {isOutOfEnvelope ? 'BUFFET LIMIT' : `M ${resolvedMach.toFixed(2)}`}
+                {isOutOfEnvelope ? 'BUFFET LIMIT' : hasIncompleteInputs ? '---' : `M ${resolvedMach.toFixed(2)}`}
               </span>
             </div>
             <div className="metric-box">
               <span className="label">Total Fuel Flow</span>
-              <span className="value">{fuelFlowLbs.toLocaleString()} lbs/h</span>
+              <span className="value">{hasIncompleteInputs ? "---" : `${fuelFlowLbs.toLocaleString()} lbs/h`}</span>
             </div>
             <div className="metric-box">
               <span className="label">Specific Range</span>
-              <span className="value">{specificRange.toFixed(3)} NM/lb</span>
+              <span className="value">{hasIncompleteInputs ? "---" : `${specificRange.toFixed(3)} NM/lb`}</span>
             </div>
           </div>
 
           <div className="performance-table">
-            <div className="table-row"><span>Optimal Profile Level</span><span className="val highlight">FL {optimalFL}</span></div>
-            <div className="table-row"><span>True Airspeed (TAS)</span><span>{tas} kt</span></div>
-            <div className="table-row"><span>Ground Speed (GS)</span><span>{gs} kt</span></div>
-            <div className="table-row"><span>Max Operating Altitude</span><span>FL {maxOperatingFL}</span></div>
+            <div className="table-row"><span>Optimal Profile Level</span><span className="val highlight">{hasIncompleteInputs ? "---" : `FL ${optimalFL}`}</span></div>
+            <div className="table-row"><span>True Airspeed (TAS)</span><span>{hasIncompleteInputs ? "---" : `${tas} kt`}</span></div>
+            <div className="table-row"><span>Ground Speed (GS)</span><span>{hasIncompleteInputs ? "---" : `${gs} kt`}</span></div>
+            <div className="table-row"><span>Max Operating Altitude</span><span>{hasIncompleteInputs ? "---" : `FL ${maxOperatingFL}`}</span></div>
           </div>
         </div>
       </div>

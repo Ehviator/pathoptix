@@ -5,22 +5,22 @@ const MissionContext = createContext(null);
 
 export function MissionProvider({ children }) {
   const [mission, setMission] = useState({
-    departure: 'CYYZ',
-    arrival: 'CYOW',
-    weight: 115000, 
-    costIndex: 15,
-    isaDev: 0,
-    cruiseFL: 350,
-    fuelOnBoard: 12000,
-    routeString: 'YTZ SEDAR YOW',
+    departure: '',
+    arrival: '',
+    weight: '', 
+    costIndex: '',
+    isaDev: '',
+    cruiseFL: '',
+    fuelOnBoard: '',
+    routeString: '',
     antiIce: false,
     aircraftConfig: 'E195E2_STD',
-    targetAltitude: 35000, // Climb target altitude and descent target altitude (in ft)
-    descentSpeed: 270,    // Descent speed KIAS
-    fpa: 3.0,             // Descent flight path angle
-    manualMach: 0.78,     // Cruise manual mach speed
-    speedMode: 'ECON',    // Cruise speed mode: ECON or MANUAL
-    wind: 0               // Enroute wind velocity (kt)
+    targetAltitude: '',
+    descentSpeed: '',
+    fpa: '',
+    manualMach: '',
+    speedMode: 'ECON',
+    wind: ''
   });
 
   const [airportDb, setAirportDb] = useState(null);
@@ -50,6 +50,10 @@ export function MissionProvider({ children }) {
   const updateMissionField = (key, value, min, max) => {
     setMission(prev => {
       let updatedVal = value;
+      if (value === "" || value === null || value === undefined) {
+        return { ...prev, [key]: "" };
+      }
+
       if (['weight', 'cruiseFL', 'costIndex', 'isaDev', 'fuelOnBoard', 'targetAltitude', 'descentSpeed', 'fpa', 'manualMach', 'wind'].includes(key)) {
         updatedVal = ['fpa', 'manualMach'].includes(key) ? parseFloat(value) : parseInt(value, 10);
         if (isNaN(updatedVal)) return prev; // Keep old value if invalid/empty input on blur
@@ -61,14 +65,17 @@ export function MissionProvider({ children }) {
     });
   };
 
-  const maxOperatingFL = getLegalMaxAltitude(mission.weight);
+  const maxOperatingFL = getLegalMaxAltitude(mission.weight || 0);
 
   // Enforce boundary guardrails automatically when state changes
   useEffect(() => {
-    if (mission.cruiseFL > maxOperatingFL) {
-      setMission(prev => ({ ...prev, cruiseFL: maxOperatingFL }));
+    if (mission.weight !== "" && mission.cruiseFL !== "") {
+      const maxFL = getLegalMaxAltitude(mission.weight);
+      if (mission.cruiseFL > maxFL) {
+        setMission(prev => ({ ...prev, cruiseFL: maxFL }));
+      }
     }
-  }, [mission.weight, maxOperatingFL]);
+  }, [mission.weight, mission.cruiseFL, maxOperatingFL]);
 
   return (
     <MissionContext.Provider value={{ mission, updateMissionField, airportDb, navDb, cruiseMatrix, maxOperatingFL, loading }}>

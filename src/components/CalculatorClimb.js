@@ -5,25 +5,28 @@ import { modulateClimbSpeed } from '../engine/dynamicModulators.js';
 export default function CalculatorClimb() {
   const { mission, updateMissionField } = useMission();
 
-  const climbWeightKg = mission.weight / 2.20462;
+  const hasIncompleteInputs = mission.weight === "" || mission.targetAltitude === "" || mission.isaDev === "";
+
+  const climbWeightKg = hasIncompleteInputs ? 0 : mission.weight / 2.20462;
   const baseClimbSpeedIAS = 290; 
-  const targetedIAS = modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, mission.isaDev);
+  const targetedIAS = hasIncompleteInputs ? "---" : modulateClimbSpeed(baseClimbSpeedIAS, climbWeightKg, mission.isaDev);
 
   const baseTimeToClimb = 12; 
-  const weightTimeFactor = (mission.weight - 90000) * 0.00012;
-  const tempTimeFactor = mission.isaDev > 0 ? mission.isaDev * 0.15 : 0;
-  const altTimeFactor = (mission.targetAltitude - 25000) * 0.0003;
-  const timeToClimb = Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + altTimeFactor);
+  const weightTimeFactor = hasIncompleteInputs ? 0 : (mission.weight - 90000) * 0.00012;
+  const tempTimeFactor = hasIncompleteInputs ? 0 : (mission.isaDev > 0 ? mission.isaDev * 0.15 : 0);
+  const altTimeFactor = hasIncompleteInputs ? 0 : (mission.targetAltitude - 25000) * 0.0003;
+  const timeToClimb = hasIncompleteInputs ? "---" : Math.round(baseTimeToClimb + weightTimeFactor + tempTimeFactor + altTimeFactor);
 
-  const climbDistance = Math.round(55 + (climbWeightKg - 40000) * 0.00075 + (mission.targetAltitude - 20000) * 0.0015 + mission.isaDev * 0.25);
+  const climbDistance = hasIncompleteInputs ? "---" : Math.round(55 + (climbWeightKg - 40000) * 0.00075 + (mission.targetAltitude - 20000) * 0.0015 + mission.isaDev * 0.25);
 
   const baseClimbFuel = 1300; 
-  const weightFuelFactor = (mission.weight - 90000) * 0.015;
-  const tempFuelFactor = mission.isaDev > 0 ? mission.isaDev * 12 : 0;
-  const altFuelFactor = (mission.targetAltitude - 25000) * 0.035;
-  const fuelBurned = Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + altFuelFactor);
+  const weightFuelFactor = hasIncompleteInputs ? 0 : (mission.weight - 90000) * 0.015;
+  const tempFuelFactor = hasIncompleteInputs ? 0 : (mission.isaDev > 0 ? mission.isaDev * 12 : 0);
+  const altFuelFactor = hasIncompleteInputs ? 0 : (mission.targetAltitude - 25000) * 0.035;
+  const fuelBurned = hasIncompleteInputs ? "---" : Math.round(baseClimbFuel + weightFuelFactor + tempFuelFactor + altFuelFactor);
 
-  const averageROC = Math.round(mission.targetAltitude / timeToClimb);
+  const averageROC = hasIncompleteInputs || timeToClimb === 0 ? "---" : Math.round(mission.targetAltitude / timeToClimb);
+  const crossoverAlt = hasIncompleteInputs ? "---" : Math.round(290 + (targetedIAS - 290) * 0.1);
 
   return (
     <div className="panel-container">
@@ -71,7 +74,7 @@ export default function CalculatorClimb() {
             </div>
           </div>
           <span className="caption" style={{ display: 'block', marginTop: '12px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-            Internal Mass Reference: {Math.round(climbWeightKg).toLocaleString()} kg.
+            Internal Mass Reference: {hasIncompleteInputs ? "---" : Math.round(climbWeightKg).toLocaleString()} kg.
           </span>
         </div>
 
@@ -80,23 +83,23 @@ export default function CalculatorClimb() {
           <div className="metrics-summary">
             <div className="metric-box">
               <span className="label">Time to Climb</span>
-              <span className="value">{timeToClimb} min</span>
+              <span className="value">{hasIncompleteInputs ? "---" : `${timeToClimb} min`}</span>
             </div>
             <div className="metric-box">
               <span className="label">Fuel Burned</span>
-              <span className="value">{fuelBurned.toLocaleString()} lbs</span>
+              <span className="value">{hasIncompleteInputs ? "---" : `${fuelBurned.toLocaleString()} lbs`}</span>
             </div>
             <div className="metric-box">
               <span className="label">Climb Distance</span>
-              <span className="value">{climbDistance} NM</span>
+              <span className="value">{hasIncompleteInputs ? "---" : `${climbDistance} NM`}</span>
             </div>
           </div>
 
           <div className="performance-table">
-            <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{targetedIAS} kt</span></div>
-            <div className="table-row"><span>Target Mach Schedule</span><span>M 0.78</span></div>
-            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>+{averageROC.toLocaleString()} ft/min</span></div>
-            <div className="table-row"><span>Optimal Crossover Altitude</span><span>FL {Math.round(290 + (targetedIAS - 290) * 0.1)}</span></div>
+            <div className="table-row"><span>Target Indicated Speed (IAS)</span><span className="val highlight">{hasIncompleteInputs ? "---" : `${targetedIAS} kt`}</span></div>
+            <div className="table-row"><span>Target Mach Schedule</span><span>{hasIncompleteInputs ? "---" : "M 0.78"}</span></div>
+            <div className="table-row"><span>Average Climb Rate (ROC)</span><span>{hasIncompleteInputs ? "---" : `+${averageROC.toLocaleString()} ft/min`}</span></div>
+            <div className="table-row"><span>Optimal Crossover Altitude</span><span>{hasIncompleteInputs ? "---" : `FL ${crossoverAlt}`}</span></div>
           </div>
         </div>
       </div>
