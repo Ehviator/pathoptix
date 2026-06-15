@@ -824,3 +824,30 @@ body {
   fill: #ffffff;
   font-weight: 600;
 }
+
+/* Sidebar Section Titles & Dividers */
+.sidebar-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  padding: 0.8rem 0.85rem 0.2rem 0.85rem;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.efb-sidebar.collapsed .sidebar-section-title {
+  display: none;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 0.5rem 0.85rem;
+}
+
+.efb-sidebar.collapsed .sidebar-divider {
+  margin: 0.5rem 0.2rem;
+}
+

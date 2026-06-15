@@ -122,19 +122,13 @@ export default function App() {
           </div>
 
           <nav className="sidebar-nav">
+            {!sidebarCollapsed && <div className="sidebar-section-title">Optimization Engine</div>}
             <button 
               className={`sidebar-btn ${activeTab === 'create-flight' ? 'active' : ''}`}
               onClick={() => setActiveTab('create-flight')}
               title="Create Flight"
             >
               <span>📋</span> {!sidebarCollapsed && "Create Flight"}
-            </button>
-            <button 
-              className={`sidebar-btn ${activeTab === 'review-route' ? 'active' : ''}`}
-              onClick={() => setActiveTab('review-route')}
-              title="Review Route"
-            >
-              <span>🗺️</span> {!sidebarCollapsed && "Review Route"}
             </button>
             <button 
               className={`sidebar-btn ${activeTab === 'review-fuel' ? 'active' : ''}`}
@@ -156,6 +150,17 @@ export default function App() {
               title="Optimize Fuel"
             >
               <span>📊</span> {!sidebarCollapsed && "Optimize Fuel"}
+            </button>
+
+            <div className="sidebar-divider"></div>
+            {!sidebarCollapsed && <div className="sidebar-section-title">Flight Utilities</div>}
+
+            <button 
+              className={`sidebar-btn ${activeTab === 'review-route' ? 'active' : ''}`}
+              onClick={() => setActiveTab('review-route')}
+              title="Review Route"
+            >
+              <span>🗺️</span> {!sidebarCollapsed && "Review Route"}
             </button>
             <button
               className={`sidebar-btn ${activeTab === 'review-weather' ? 'active' : ''}`}
